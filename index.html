@@ -22,6 +22,7 @@
         <div class="hud-item"><span class="hud-label">GRUPO</span><span class="hud-value mono" id="hudGroup">----</span></div>
         <div class="hud-item"><span class="hud-label">PUNTOS</span><span class="hud-value" id="hudScore">1000</span></div>
         <div class="hud-item timer"><span class="hud-label">TIEMPO</span><span class="hud-value mono" id="hudTimer">--:--</span></div>
+        <button class="hud-item mute" id="muteBtn" type="button" aria-label="Activar o silenciar sonido">🔊</button>
       </div>
     </div>
     <div class="progress-wrap">
@@ -32,6 +33,8 @@
   </header>
 
   <main id="app"></main>
+
+  <nav class="inv" id="inv" hidden aria-label="Inventario"><span class="inv-title">INVENTARIO</span><div class="inv-items"></div></nav>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="modal" class="modal" hidden></div>

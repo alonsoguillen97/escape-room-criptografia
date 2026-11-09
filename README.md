@@ -20,23 +20,27 @@ js/profesor.js
 > Necesita https o localhost (la Web Crypto API no funciona abriendo el archivo con doble clic en algunos navegadores).
 > Prueba local: `python -m http.server 8765` y abre http://localhost:8765
 
-## Fases (≈ 60–75 min)
-| # | Fase | Qué hacen | Herramienta |
-|---|------|-----------|-------------|
-| 1 | El disco robado | Clasificar dispositivos protegidos/legibles + 2 preguntas | — |
-| 2 | La nota “cifrada” | Descodificar Base64 → PIN (codificar ≠ cifrar) | PowerShell / CyberChef |
-| 3 | Las cuatro llaves | Drag & drop: cifrar/descifrar/firmar/verificar | — |
-| 4 | El contrato manipulado | 4 contratos con cambios invisibles; hallar el auténtico por SHA-256 | Get-FileHash |
-| 5 | Un solo cambio | Crear mensaje.txt, hashear, cambiar 1000→9000 (efecto avalancha) | Get-FileHash |
-| 6 | La copia que miente | Verificar copias contra un manifiesto SHA256SUMS + regla 3-2-1 | Get-FileHash |
-| 7 | El mensaje cifrado | Clave = SHA-256("PIN:GRUPO"), descifrar AES-256-CBC | PowerShell + CyberChef |
-| 8 | La caja fuerte digital | Crear 7z AES-256 con nombres cifrados e intercambiarlo con otro grupo; validar su testigo | 7-Zip |
-| 9 | Informe a dirección | Asignar el control adecuado a 6 situaciones | — |
+## Salas (≈ 75–90 min)
+Cada sala es una escena ilustrada con objetos clicables, objetivos, radio con mensajes, inventario y sonido.
+
+| # | Sala | Mecánica | Herramienta real |
+|---|------|----------|------------------|
+| 1 | Oficina | Explorador de archivos del SSD robado (D: legible, E: BitLocker). Deducir el código de la puerta desde un CSV | — |
+| 2 | Servidores | Descodificar la nota Base64 → teclado del rack | PowerShell / CyberChef |
+| 3 | Despacho de Carlos | Descifrar una carta **RSA real** eligiendo la clave correcta del llavero → candado de ruedas → responder con la clave adecuada | CyberChef (RSA Decrypt) |
+| 4 | Archivo | Verificador: escanear los 4 contratos declarando su hash; detectar el auténtico y 3 evidencias | Get-FileHash |
+| 5 | Laboratorio | Efecto avalancha visual + **selladora**: buscar por fuerza bruta un número cuyo hash empiece por 000 | PowerShell (bucle) |
+| 6 | Copias | Bloquear la copia corrupta con manifiesto SHA256SUMS + diseñar un plan 3-2-1 con copias externas cifradas | Get-FileHash |
+| 7 | Despacho del director | Clave = SHA-256("PIN:GRUPO") → descifrar AES-256 → dial de caja fuerte (sentido y número) | PowerShell + CyberChef |
+| 8 | Cámara acorazada | Doble llave: vuestro testigo + el de otro equipo sacado de su .7z cifrado | 7-Zip |
+| 9 | Salida | Clasificar las medidas usadas en C / I / D / A / no protege | — |
+
+Probado con CyberChef real (RSA-OAEP SHA-1 y AES-CBC) y PowerShell 5.1.
 
 ## Por qué la IA no lo resuelve sola
 - Cada grupo tiene un **código aleatorio** y de él dependen PIN, contratos, hashes, copias, clave AES y testigo. Ni otro grupo ni una IA conocen esos datos.
 - Las respuestas son **hashes de archivos que solo existen en su ordenador**, un mensaje AES que hay que descifrar con una clave que deben calcular, y un **testigo que solo se consigue intercambiando el .7z con otro grupo**.
-- La fase 7 encadena con la 2 (el PIN), así que no pueden saltarse pasos.
+- La sala 7 encadena con la 2 (el PIN) y la 3 con la 2 (el llavero), así que no pueden saltarse pasos.
 - Las preguntas conceptuales sí se pueden preguntar a una IA, pero pesan poco en el tiempo total.
 - Límite: un alumno experto podría leer el JS con DevTools. Para 2º SMR es poco probable; si os preocupa, cambia `SECRET` en `core.js` cada curso.
 
@@ -45,7 +49,7 @@ js/profesor.js
 - En `profesor.html` → Ranking, pega los códigos para ver el podio. Si un código se ha manipulado, aparece marcado.
 - Reiniciar la misión genera un código nuevo y pone el cronómetro a cero.
 
-## Fase 8 sin pareja
+## Sala 8 sin pareja
 Si un grupo se queda sin pareja: prepara de antemano un `.7z` con `testigo_PROF.txt`. El testigo de `PROF` lo ves en el Solucionario.
 
 ## Configuración (`js/core.js` → CONFIG)

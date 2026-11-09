@@ -70,18 +70,21 @@
       e.preventDefault();
       const code = $("#gc").value.trim().toUpperCase();
       if (code.length !== 4) return;
+      $("#out").innerHTML = `<p class="muted">Calculando…</p>`;
       const d = await CN.deriveGroup(code);
+      const nonce = await CN.firstNonce(d);
+      const corruptHash = (await CN.sha256(d.backups[d.corrupt].content)).slice(0, 8);
       const item = (t, val) => `<div><b>${t}</b>${val}</div>`;
       $("#out").innerHTML = `<div class="sol">
-        ${item("FASE 1 · Disco", "Legibles: SSD sin cifrar, archivos ocultos, ZIP sin contraseña · Q1: «Nada, si no estaba cifrado» · Q2: cifrar la unidad")}
-        ${item("FASE 2 · Base64", `PIN: <code>${d.pin}</code> · Q1: no hace falta clave · Q2: AES-256`)}
-        ${item("FASE 3 · Llaves", "Cifra: pública de Carlos · Descifra: privada de Carlos · Firma: privada de Ana · Verifica: pública de Ana")}
-        ${item("FASE 4 · Contrato", `Auténtico: <code>contrato_${d.authentic + 1}.txt</code> · Prueba: 6 primeros del hash de contrato_${d.askIdx + 1} = <code>${d.contracts[d.askIdx].hash.slice(0, 6).toUpperCase()}</code>`)}
-        ${item("FASE 5 · Avalancha", `«${esc(d.msg1)}» → <code>${d.msg1Hash.slice(0, 8)}</code> · «${esc(d.msg2)}» → <code>${d.msg2Hash.slice(0, 8)}</code> (sin salto de línea; se aceptan también variantes del Bloc de notas)`)}
-        ${item("FASE 6 · Copias", `Copia corrupta: <code>${d.corruptName}</code>`)}
-        ${item("FASE 7 · AES", `Texto: <code>${esc(d.keyText)}</code><br>Clave: <code>${d.keyHex}</code><br>Código caja fuerte: <code>${d.vault}</code>`)}
-        ${item("FASE 8 · 7-Zip", `Testigo de este grupo: <code>${d.token}</code> (lo que debe introducir OTRO grupo junto con el código ${code})`)}
-        ${item("FASE 9 · Informe", "Portátil → BitLocker · ISO → hash · Contrato aprobado → firma · Solo Carlos → pública de Carlos · Correo + teléfono → 7z AES · Ransomware → copias 3-2-1")}
+        ${item("SALA 1 · Oficina", `Abrir D: y E: en el portátil · nota en D:\\Personal · Código de la puerta: <code>${d.badge}</code> (tarjeta de ${esc(d.badgeOwner)}, Logística más antiguo)`)}
+        ${item("SALA 2 · Servidores", `PIN del rack (Base64): <code>${d.pin}</code> · luego clic en el llavero USB`)}
+        ${item("SALA 3 · Carlos", `Descifrar con <b>carlos_privada.pem</b> (CyberChef: From Base64 → RSA Decrypt, RSA-OAEP, SHA-1) · Combinación: <code>${d.combo.join("-")}</code> · Responder con <b>pública de Ana</b>`)}
+        ${item("SALA 4 · Archivo", `Auténtico: <code>contrato_${d.authentic + 1}</code> · Huellas (8): ${d.contracts.map((c, i) => `${i + 1}=<code>${c.hash.slice(0, 8)}</code>`).join(" · ")} · hay que escanear los 4`)}
+        ${item("SALA 5 · Laboratorio", `A: <code>${d.msg1Hash}</code><br>B: <code>${d.msg2Hash}</code><br>Sello: número <code>${nonce}</code> (vale cualquier número cuyo hash empiece por ${CN.CONFIG.MINING_PREFIX})`)}
+        ${item("SALA 6 · Copias", `Corrupta: <code>${d.corruptName}</code> · su hash real (8): <code>${corruptHash}</code> · Plan válido: p. ej. NAS + Cinta + Nube con 🔒`)}
+        ${item("SALA 7 · Despacho", `Texto: <code>${esc(d.keyText)}</code><br>Clave: <code>${d.keyHex}</code><br>Dial: Derecha ${d.dial[0]} → Izquierda ${d.dial[1]} → Derecha ${d.dial[2]}`)}
+        ${item("SALA 8 · Cámara", `Testigo de este equipo: <code>${d.token}</code> (Llave 1 para ellos; Llave 2 para su aliado junto con el código ${code})`)}
+        ${item("SALA 9 · Salida", "C: BitLocker, AES, 7z, carta RSA · I: verificador SHA-256, SHA256SUMS · D: plan 3-2-1 · A: firma de Ana · Papelera: Base64, ocultos")}
       </div>`;
     };
   }

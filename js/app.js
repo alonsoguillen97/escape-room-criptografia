@@ -1,42 +1,49 @@
 /* =========================================================
-   OPERACIÓN CAJA NEGRA — web del alumnado
+   OPERACIÓN CAJA NEGRA — escape room (web del alumnado)
+   Cada fase es una sala con objetos interactivos.
    ========================================================= */
 (function () {
   "use strict";
   const C = CN.CONFIG;
-  const STORE = "cajanegra.v1";
+  const STORE = "cajanegra.v2";
   const app = document.getElementById("app");
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const N = "#101C3A", L = "#A9DB2E", LL = "#EAF8C9", W = "#ffffff", G = "#E4E8ED", R = "#D94444";
 
-  let S = null; // estado guardado
-  let D = null; // datos derivados del grupo
+  let S = null, D = null, CUR = null; // estado, datos de grupo, sala actual
 
-  /* ---------------- Ilustraciones (trazo grueso navy) ---------------- */
-  const N = "#101C3A", L = "#A9DB2E", LL = "#EAF8C9", W = "#ffffff", R = "#D94444";
-  const g = (inner) => `<svg viewBox="0 0 200 150" aria-hidden="true"><g fill="none" stroke="${N}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">${inner}</g></svg>`;
-  const ART = {
-    box: g(`<path d="M40 55 L100 30 L160 55 L160 110 L100 135 L40 110 Z" fill="${N}"/><path d="M40 55 L100 80 L160 55" stroke="${W}" stroke-width="4"/><path d="M100 80 V135" stroke="${W}" stroke-width="4"/><path d="M52 72 L88 87 V103 L52 88 Z" fill="${L}" stroke="${L}"/><circle cx="130" cy="95" r="10" fill="${L}" stroke="${L}"/>`),
-    ssd: g(`<rect x="34" y="34" width="112" height="78" rx="14" fill="${LL}"/><rect x="52" y="52" width="76" height="26" rx="6" fill="${W}"/><path d="M62 65h34"/><circle cx="124" cy="96" r="6" fill="${L}"/><path d="M146 72h16c10 0 14 8 14 16v26"/><rect x="167" y="112" width="18" height="16" rx="3" fill="${L}"/><path d="M22 30l10 10M18 52h12M30 16l4 12" stroke="${R}"/>`),
-    note: g(`<path d="M50 20h72l28 28v86H50Z" fill="${W}"/><path d="M122 20v28h28" fill="${LL}"/><path d="M64 76h70M64 94h56M64 112h64" stroke-width="6" stroke-dasharray="10 7"/><text x="62" y="60" font-family="monospace" font-size="15" font-weight="700" fill="${N}" stroke="none">TkFUQQ==</text>`),
-    keys: g(`<circle cx="62" cy="58" r="24" fill="${L}"/><circle cx="62" cy="58" r="8" fill="${W}"/><path d="M86 62h70M136 62v16M150 62v12"/><circle cx="76" cy="104" r="20" fill="${W}"/><circle cx="76" cy="104" r="7" fill="${LL}"/><path d="M96 108h60M142 108v14M130 108v10"/>`),
-    docs: g(`<rect x="26" y="34" width="62" height="84" rx="8" fill="${W}"/><rect x="44" y="24" width="62" height="84" rx="8" fill="${LL}"/><path d="M56 46h36M56 62h36M56 78h24"/><circle cx="128" cy="78" r="28" fill="${W}"/><path d="M148 98l26 26" stroke-width="9"/><path d="M116 78l8 8 16-16" stroke="${L}" stroke-width="7"/>`),
-    avalanche: g(`<rect x="16" y="22" width="64" height="38" rx="8" fill="${LL}"/><text x="25" y="49" font-family="monospace" font-size="18" font-weight="700" fill="${N}" stroke="none">1000</text><rect x="16" y="90" width="64" height="38" rx="8" fill="${W}"/><text x="25" y="117" font-family="monospace" font-size="18" font-weight="700" fill="${R}" stroke="none">9000</text><path d="M86 41h22M86 109h22"/><path d="M102 34l8 7-8 7M102 102l8 7-8 7"/><rect x="116" y="28" width="70" height="26" rx="6" fill="${L}"/><rect x="116" y="96" width="70" height="26" rx="6" fill="${N}"/><path d="M126 41h10M142 41h6M154 41h22"/><path d="M126 109h18M150 109h4M160 109h16" stroke="${W}"/>`),
-    backup: g(`<rect x="20" y="30" width="70" height="90" rx="10" fill="${LL}"/><path d="M34 52h42M34 70h42M34 88h28"/><rect x="110" y="30" width="70" height="90" rx="10" fill="${W}"/><path d="M124 52h42M124 70h42"/><path d="M124 88h14" stroke="${R}"/><path d="M90 75h20" stroke-dasharray="4 6"/><circle cx="145" cy="100" r="10" fill="${R}" stroke="${R}"/><path d="M141 96l8 8M149 96l-8 8" stroke="${W}" stroke-width="3"/>`),
-    envelope: g(`<rect x="22" y="40" width="120" height="82" rx="10" fill="${W}"/><path d="M22 48l60 42 60-42"/><rect x="116" y="70" width="60" height="50" rx="8" fill="${L}"/><path d="M128 70V56a18 18 0 0 1 36 0v14"/><circle cx="146" cy="92" r="6" fill="${N}"/><path d="M146 98v10"/>`),
-    safe: g(`<rect x="32" y="22" width="130" height="108" rx="12" fill="${LL}"/><rect x="46" y="36" width="102" height="80" rx="8" fill="${W}"/><circle cx="97" cy="76" r="24" fill="${L}"/><circle cx="97" cy="76" r="6" fill="${N}"/><path d="M97 52v8M97 92v8M73 76h8M113 76h8"/><path d="M48 130v10M146 130v10"/>`),
-    report: g(`<rect x="44" y="26" width="104" height="112" rx="10" fill="${W}"/><rect x="72" y="16" width="48" height="20" rx="6" fill="${L}"/><path d="M62 62l8 8 14-14M62 92l8 8 14-14M62 122l8 8 14-14" stroke="${L}" stroke-width="7"/><path d="M96 64h36M96 94h36M96 124h24"/>`),
+  /* =============== SONIDO (Web Audio, sin archivos) =============== */
+  const Snd = {
+    ctx: null,
+    tone(f, dur = 0.12, type = "sine", vol = 0.12, delay = 0) {
+      if (!S || S.muted) return;
+      try {
+        this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
+        const t = this.ctx.currentTime + delay, o = this.ctx.createOscillator(), g = this.ctx.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(this.ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+      } catch (e) {}
+    },
+    click() { this.tone(1100, 0.05, "square", 0.04); },
+    ok() { [660, 880, 1320].forEach((f, i) => this.tone(f, 0.18, "triangle", 0.12, i * 0.09)); },
+    bad() { this.tone(170, 0.25, "sawtooth", 0.12); this.tone(120, 0.3, "sawtooth", 0.1, 0.18); },
+    item() { [520, 780].forEach((f, i) => this.tone(f, 0.14, "sine", 0.12, i * 0.08)); },
+    open() { this.tone(300, 0.08, "triangle", 0.05); },
+    door() { for (let i = 0; i < 8; i++) this.tone(90 + i * 25, 0.12, "square", 0.05, i * 0.07); this.ok(); },
+    radio() { this.tone(1800, 0.03, "square", 0.03); },
   };
 
-  /* ---------------- Utilidades UI ---------------- */
+  /* =============== UTILIDADES UI =============== */
   function toast(msg, type = "ok") {
     const el = document.createElement("div");
-    el.className = `toast-item ${type}`;
-    el.textContent = msg;
+    el.className = `toast-item ${type}`; el.textContent = msg;
     document.getElementById("toast").appendChild(el);
-    setTimeout(() => el.classList.add("out"), 2600);
-    setTimeout(() => el.remove(), 3100);
+    setTimeout(() => el.classList.add("out"), 2800);
+    setTimeout(() => el.remove(), 3300);
   }
   function modal({ title, body, ok = "Aceptar", cancel = null }) {
     return new Promise((resolve) => {
@@ -48,475 +55,672 @@
     });
   }
   function download(name, content) {
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = name;
+    const url = URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1500);
   }
   const cmd = (code, label = "PowerShell") =>
-    `<div class="cmd"><div class="cmd-head"><span>${label}</span><button class="copy keep" type="button">Copiar</button></div><pre><code>${esc(code)}</code></pre></div>`;
-  const fileList = (files) =>
-    `<div class="files">${files.map((f, i) => `<button class="file-btn keep" type="button" data-file="${i}"><span class="file-ico">${f.name.split(".").pop().toUpperCase()}</span><span class="file-name">${esc(f.name)}</span><span class="file-dl">↓</span></button>`).join("")}</div>`;
-  function bindFiles(body, files) {
-    $$("[data-file]", body).forEach((b) => (b.onclick = () => { const f = files[+b.dataset.file]; download(f.name, f.content); toast(`Descargado: ${f.name}`); }));
+    `<div class="cmd"><div class="cmd-head"><span>${label}</span><button class="copy" type="button">Copiar</button></div><pre><code>${esc(code)}</code></pre></div>`;
+  function files(body, list) {
+    const box = document.createElement("div"); box.className = "files";
+    box.innerHTML = list.map((f, i) => `<button class="file-btn" type="button" data-i="${i}"><span class="file-ico">${f.name.split(".").pop().toUpperCase()}</span><span>${esc(f.name)}</span><span class="file-dl">↓</span></button>`).join("");
+    body.appendChild(box);
+    $$("button", box).forEach((b) => (b.onclick = () => { const f = list[+b.dataset.i]; download(f.name, f.content); toast(`Descargado: ${f.name}`, "info"); f.onDownload && f.onDownload(); }));
   }
   document.addEventListener("click", (e) => {
-    const b = e.target.closest(".copy");
-    if (!b) return;
+    const b = e.target.closest(".copy"); if (!b) return;
     const txt = b.closest(".cmd").querySelector("code").textContent;
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(
       () => { b.textContent = "Copiado ✓"; setTimeout(() => (b.textContent = "Copiar"), 1500); },
-      () => toast("No se pudo copiar: selecciónalo a mano", "bad")
-    );
+      () => toast("No se pudo copiar: selecciónalo a mano", "bad"));
   });
-
-  /* ---------------- Constructores de pasos ---------------- */
-  function mcq(question, options, explain = "") {
-    return (body, api) => {
-      const opts = api.shuffle(options);
-      body.insertAdjacentHTML("beforeend",
-        `<p class="q">${question}</p><div class="options">${opts.map((o, i) => `<button type="button" class="opt" ${o.ok ? "data-ok" : ""}><span class="opt-letter">${"ABCDEF"[i]}</span><span class="opt-text">${o.t}</span><span class="opt-mark" aria-hidden="true"></span></button>`).join("")}</div>${explain ? `<div class="explain">${explain}</div>` : ""}`);
-      bindOptions(body, api, "Respuesta incorrecta");
-    };
-  }
-  function bindOptions(body, api, wrongMsg) {
-    $$(".opt", body).forEach((b) => (b.onclick = () => {
-      if (api.solved() || b.classList.contains("wrong")) return;
-      if (b.hasAttribute("data-ok")) { b.classList.add("correct"); api.solve(); }
-      else { b.classList.add("wrong"); b.setAttribute("aria-label", b.textContent + " (incorrecta)"); api.wrong(wrongMsg); }
-    }));
-  }
-  function answer({ label, placeholder = "", check, mono = true }) {
-    return (body, api) => {
-      const form = document.createElement("form");
-      form.className = "answer";
-      form.noValidate = true;
-      form.innerHTML = `<label><span>${label}</span><input type="text" autocomplete="off" spellcheck="false" placeholder="${esc(placeholder)}" class="${mono ? "mono" : ""}"></label><button class="btn" type="submit">Validar</button>`;
-      body.appendChild(form);
-      const input = $("input", form);
-      form.onsubmit = async (e) => {
-        e.preventDefault();
-        if (api.solved()) return;
-        const v = input.value.trim();
-        if (!v) { input.focus(); return; }
-        if (await check(v)) api.solve(v);
-        else { input.classList.add("shake"); setTimeout(() => input.classList.remove("shake"), 500); api.wrong("No es correcto. Revisa el procedimiento"); }
-      };
-    };
-  }
-  const chain = (...fns) => (body, api) => fns.forEach((f) => (typeof f === "string" ? body.insertAdjacentHTML("beforeend", f) : f(body, api)));
   const norm = (s) => s.trim().toUpperCase().replace(/\s+/g, "");
-  const hexPrefixCheck = (set, n = 8) => (v) => v.trim().length >= n && set.has(v.trim().toLowerCase().slice(0, n));
+  const hexIn = (s) => s.trim().toLowerCase().replace(/\s+/g, "");
+  const CHEF = `<a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">CyberChef</a>`;
 
-  /* ---- Fase 1: clasificar dispositivos ---- */
-  function classifyDevices(body, api) {
-    const items = api.shuffle([
-      { t: "SSD externo sin cifrar (el portátil tenía contraseña de Windows)", a: "e" },
-      { t: "Portátil apagado con BitLocker activado", a: "p" },
-      { t: "USB con un archivo .7z cifrado con AES-256 y contraseña robusta", a: "p" },
-      { t: "USB con los archivos marcados como “ocultos”", a: "e" },
-      { t: "Disco con una carpeta comprimida en .zip sin contraseña", a: "e" },
-      { t: "Contenedor VeraCrypt desmontado", a: "p" },
-    ]);
-    body.insertAdjacentHTML("beforeend", `<p>El atacante tiene acceso físico a todos estos dispositivos. ¿Cuáles podría leer?</p>
-      <div class="classify">${items.map((it, i) => `<div class="cls-row" data-ans="${it.a}"><span class="cls-text">${it.t}</span><div class="seg" role="group" aria-label="Clasificación"><button type="button" data-v="e" aria-pressed="false">🔓 Legible</button><button type="button" data-v="p" aria-pressed="false">🔒 Protegido</button></div></div>`).join("")}</div>
-      <button class="btn" type="button" data-act="check">Comprobar</button>`);
-    const rows = $$(".cls-row", body);
-    const set = (row, v) => $$("button", row).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
-    rows.forEach((row) => $$("button", row).forEach((b) => (b.onclick = () => { row.classList.remove("bad"); set(row, b.dataset.v); })));
-    if (api.solved()) rows.forEach((row) => set(row, row.dataset.ans));
-    $("[data-act=check]", body).onclick = () => {
-      if (api.solved()) return;
-      const sel = rows.map((r) => $("[aria-pressed=true]", r)?.dataset.v);
-      if (sel.some((v) => !v)) return toast("Clasifica todos los dispositivos", "info");
-      const bad = rows.filter((r, i) => sel[i] !== r.dataset.ans);
-      if (bad.length) api.wrong(`${bad.length} mal clasificado${bad.length > 1 ? "s" : ""}`);
-      else api.solve();
-    };
+  /* ---------- Ventana de objeto (overlay) ---------- */
+  let WIN = null;
+  function openWin(title, build, { wide = false, icon = "🔎" } = {}) {
+    if (WIN) WIN.close(true);
+    const ov = document.createElement("div");
+    ov.className = "win-ov";
+    ov.innerHTML = `<div class="win ${wide ? "wide" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="win-bar"><span class="win-dots"><i></i><i></i><i></i></span><span class="win-title">${icon} ${title}</span><button class="win-x" type="button" aria-label="Cerrar">✕</button></div><div class="win-body"></div></div>`;
+    document.body.appendChild(ov);
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    function close(silent) {
+      document.removeEventListener("keydown", onKey);
+      ov.classList.add("closing"); setTimeout(() => ov.remove(), 160);
+      WIN = null; if (!silent) refreshRoom();
+    }
+    document.addEventListener("keydown", onKey);
+    $(".win-x", ov).onclick = () => close();
+    ov.addEventListener("mousedown", (e) => { if (e.target === ov) close(); });
+    WIN = { close, body: $(".win-body", ov) };
+    Snd.open();
+    build(WIN.body, close);
+    setTimeout(() => { const f = $("input, .keypad, button:not(.win-x)", ov); f && f.focus(); }, 60);
   }
 
-  /* ---- Fase 3: arrastrar llaves ---- */
-  function keysDnD(body, api) {
-    const CARDS = { pubA: "Pública de Ana", privA: "Privada de Ana", pubC: "Pública de Carlos", privC: "Privada de Carlos" };
-    const SLOTS = [
-      { t: "Ana cifra el mensaje para Carlos con…", a: "pubC" },
-      { t: "Carlos descifra el mensaje con…", a: "privC" },
-      { t: "Ana firma el contrato con…", a: "privA" },
-      { t: "Carlos verifica la firma de Ana con…", a: "pubA" },
-    ];
-    const order = api.shuffle(Object.keys(CARDS));
-    const place = {}; // slot -> card
-    if (api.solved()) SLOTS.forEach((s, i) => (place[i] = s.a));
-    let selected = null;
-    body.insertAdjacentHTML("beforeend", `<p>Arrastra cada llave a su hueco (o haz clic en una llave y luego en el hueco).</p><div class="tray" data-zone="tray"></div><div class="slots">${SLOTS.map((s, i) => `<div class="slot-row"><span>${s.t}</span><div class="slot" data-zone="${i}" tabindex="0" role="button" aria-label="${s.t}"></div></div>`).join("")}</div><button class="btn" type="button" data-act="check">Comprobar</button>`);
-    const tray = $(".tray", body);
-    const card = (k) => `<button type="button" class="keycard ${k.startsWith("priv") ? "priv" : "pub"} ${selected === k ? "selected" : ""}" draggable="true" data-card="${k}"><span class="key-ico">${k.startsWith("priv") ? "🔑" : "🗝️"}</span>${CARDS[k]}</button>`;
-    function moveTo(k, zone) {
-      Object.keys(place).forEach((s) => place[s] === k && delete place[s]);
-      if (zone !== "tray") place[zone] = k; // si había otra, vuelve a la bandeja automáticamente
-      selected = null;
-      draw();
+  /* ---------- Teclado numérico ---------- */
+  function keypad(body, { len, label, onSubmit }) {
+    const kp = document.createElement("div");
+    kp.className = "keypad"; kp.tabIndex = 0;
+    kp.innerHTML = `<div class="kp-screen"><span class="kp-label">${label}</span><span class="kp-val"></span></div><div class="kp-keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9, "C", 0, "OK"].map((k) => `<button type="button" data-k="${k}" class="${k === "OK" ? "ok" : k === "C" ? "clr" : ""}">${k}</button>`).join("")}</div>`;
+    body.appendChild(kp);
+    let v = "";
+    const show = () => ($(".kp-val", kp).textContent = v.padEnd(len, "_").split("").join(" "));
+    async function press(k) {
+      if (kp.classList.contains("solved")) return;
+      Snd.click();
+      if (k === "C") v = "";
+      else if (k === "OK") {
+        if (v.length < len) return;
+        if (await onSubmit(v)) { kp.classList.add("solved"); $(".kp-label", kp).textContent = "ACCESO CONCEDIDO"; }
+        else { kp.classList.add("err"); setTimeout(() => kp.classList.remove("err"), 600); v = ""; }
+      } else if (v.length < len) v += k;
+      show();
     }
+    $$("button", kp).forEach((b) => (b.onclick = () => press(b.dataset.k)));
+    kp.onkeydown = (e) => { if (/^\d$/.test(e.key)) press(e.key); else if (e.key === "Enter") press("OK"); else if (e.key === "Backspace") press("C"); };
+    show();
+    return kp;
+  }
+
+  /* ---------- Formulario de respuesta ---------- */
+  function answer(body, { label, placeholder = "", btn = "Validar", check, mono = true }) {
+    const f = document.createElement("form");
+    f.className = "answer"; f.noValidate = true;
+    f.innerHTML = `<label><span>${label}</span><input type="text" autocomplete="off" spellcheck="false" placeholder="${esc(placeholder)}" class="${mono ? "mono" : ""}"></label><button class="btn" type="submit">${btn}</button>`;
+    body.appendChild(f);
+    const inp = $("input", f);
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const v = inp.value.trim(); if (!v) return inp.focus();
+      const ok = await check(v);
+      if (!ok) { inp.classList.add("shake"); setTimeout(() => inp.classList.remove("shake"), 500); }
+    };
+    return f;
+  }
+
+  /* ---------- Clasificador (arrastrar o clic) ---------- */
+  function sorter(body, { cards, bins, onCheck, btn = "Comprobar" }) {
+    const place = {}; let sel = null;
+    const wrap = document.createElement("div"); wrap.className = "sorter";
+    wrap.innerHTML = `<div class="sort-tray" data-bin=""></div><div class="sort-bins">${bins.map((b) => `<div class="sort-bin" data-bin="${b.id}"><div class="sort-bin-head">${b.label}</div><div class="sort-bin-body"></div></div>`).join("")}</div><button class="btn" type="button">${btn}</button>`;
+    body.appendChild(wrap);
+    const chip = (c) => `<button type="button" class="sort-card ${sel === c.id ? "selected" : ""}" draggable="true" data-card="${c.id}">${c.t}</button>`;
     function draw() {
-      const used = Object.values(place);
-      tray.innerHTML = order.filter((k) => !used.includes(k)).map(card).join("") || `<span class="muted small">Todas las llaves colocadas</span>`;
-      $$(".slot", body).forEach((sl) => { const k = place[sl.dataset.zone]; sl.innerHTML = k ? card(k) : `<span class="slot-empty">Suelta aquí</span>`; sl.classList.toggle("filled", !!k); sl.classList.remove("bad"); });
-      $$(".keycard", body).forEach((c) => {
-        c.ondragstart = (e) => { e.dataTransfer.setData("text/plain", c.dataset.card); c.classList.add("dragging"); };
-        c.ondragend = () => c.classList.remove("dragging");
-        c.onclick = (e) => { e.stopPropagation(); if (api.solved()) return; selected = selected === c.dataset.card ? null : c.dataset.card; draw(); };
+      $(".sort-tray", wrap).innerHTML = cards.filter((c) => !place[c.id]).map(chip).join("") || `<span class="muted small">Todo colocado. Pulsa «${btn}».</span>`;
+      $$(".sort-bin", wrap).forEach((b) => ($(".sort-bin-body", b).innerHTML = cards.filter((c) => place[c.id] === b.dataset.bin).map(chip).join("")));
+      $$(".sort-card", wrap).forEach((el) => {
+        el.ondragstart = (e) => e.dataTransfer.setData("text/plain", el.dataset.card);
+        el.onclick = (e) => { e.stopPropagation(); sel = sel === el.dataset.card ? null : el.dataset.card; Snd.click(); draw(); };
       });
     }
-    $$("[data-zone]", body).forEach((z) => {
+    $$("[data-bin]", wrap).forEach((z) => {
       z.ondragover = (e) => { e.preventDefault(); z.classList.add("over"); };
       z.ondragleave = () => z.classList.remove("over");
-      z.ondrop = (e) => { e.preventDefault(); z.classList.remove("over"); if (api.solved()) return; moveTo(e.dataTransfer.getData("text/plain"), z.dataset.zone); };
-      const act = () => { if (selected && !api.solved()) moveTo(selected, z.dataset.zone); };
-      z.onclick = act;
-      z.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); } };
+      z.ondrop = (e) => { e.preventDefault(); z.classList.remove("over"); const id = e.dataTransfer.getData("text/plain"); if (z.dataset.bin) place[id] = z.dataset.bin; else delete place[id]; sel = null; draw(); };
+      z.onclick = () => { if (!sel) return; if (z.dataset.bin) place[sel] = z.dataset.bin; else delete place[sel]; sel = null; Snd.click(); draw(); };
     });
+    $(".btn", wrap).onclick = () => onCheck(place);
     draw();
-    $("[data-act=check]", body).onclick = () => {
-      if (api.solved()) return;
-      if (Object.keys(place).length < 4) return toast("Coloca las cuatro llaves", "info");
-      const bad = SLOTS.map((s, i) => (place[i] !== s.a ? i : -1)).filter((i) => i >= 0);
-      if (bad.length) { api.wrong(`${bad.length} llave${bad.length > 1 ? "s" : ""} en sitio incorrecto`); }
-      else api.solve();
-    };
   }
 
-  /* ---- Fase 8: testigo de otro grupo ---- */
-  function tokenExchange(body, api) {
-    const form = document.createElement("form");
-    form.className = "answer two";
-    form.innerHTML = `<label><span>Código del OTRO grupo</span><input class="mono" maxlength="4" autocomplete="off" placeholder="XXXX"></label><label><span>Testigo que hay dentro de su .7z</span><input class="mono" maxlength="6" autocomplete="off" placeholder="6 caracteres"></label><button class="btn" type="submit">Validar</button>`;
-    body.appendChild(form);
-    const [ic, it] = $$("input", form);
-    if (api.solved() && typeof api.value() === "string") { const [a, b] = api.value().split(":"); ic.value = a; it.value = b; }
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      if (api.solved()) return;
-      const c = norm(ic.value), t = norm(it.value);
-      if (!c || !t) return toast("Rellena los dos campos", "info");
-      if (c === S.groupCode) return toast("Tiene que ser el testigo de OTRO grupo", "info");
-      if ((await CN.token(c)) === t) api.solve(`${c}:${t}`);
-      else api.wrong("Ese testigo no corresponde a ese grupo");
-    };
-  }
+  /* =============== ESCENAS (ilustraciones de cada sala) =============== */
+  const sk = (inner, wall = LL) => `<svg viewBox="0 0 800 420" class="scene-svg" aria-hidden="true"><rect width="800" height="420" fill="${wall}"/><rect y="330" width="800" height="90" fill="${G}"/><g fill="none" stroke="${N}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M0 330H800"/>${inner}</g></svg>`;
+  const txt = (x, y, t, size = 14, fill = N, weight = 800, extra = "") => `<text x="${x}" y="${y}" font-family="Manrope, sans-serif" font-size="${size}" font-weight="${weight}" fill="${fill}" stroke="none" ${extra}>${t}</text>`;
+  const mono = (x, y, t, size = 12, fill = N) => `<text x="${x}" y="${y}" font-family="JetBrains Mono, monospace" font-size="${size}" font-weight="700" fill="${fill}" stroke="none">${t}</text>`;
 
-  /* ---- Fase 9: informe final ---- */
-  function finalReport(body, api) {
-    const CONTROLS = [
-      "Cifrado completo del disco (BitLocker)",
-      "Comparar su hash SHA-256",
-      "Firma digital con la clave privada de la directora",
-      "Cifrar con la clave pública de Carlos",
-      "Archivo 7z con AES-256 y contraseña enviada por otro canal",
-      "Copias 3-2-1 verificadas con hash",
-      "Codificarlo en Base64",
-      "Marcar los archivos como ocultos",
-    ];
-    const CASES = api.shuffle([
-      { t: "Los portátiles de la empresa pueden perderse en un viaje.", a: 0 },
-      { t: "Has descargado una ISO y quieres saber si está alterada.", a: 1 },
-      { t: "Hay que demostrar que un contrato lo aprobó la directora y no se ha tocado.", a: 2 },
-      { t: "Enviar a Carlos un documento que solo él pueda leer.", a: 3 },
-      { t: "Mandar varios archivos a un cliente por correo; la contraseña se la darás por teléfono.", a: 4 },
-      { t: "Que un ransomware no nos deje sin datos.", a: 5 },
-    ]);
-    const opts = api.shuffle(CONTROLS.map((t, i) => ({ t, i })));
-    body.insertAdjacentHTML("beforeend", `<p>Redacta el informe para la dirección: elige el control adecuado para cada situación. Sobran opciones.</p><div class="report">${CASES.map((c, n) => `<label class="rep-row" data-ans="${c.a}"><span class="rep-num">${n + 1}</span><span class="rep-text">${c.t}</span><select><option value="">— Elige un control —</option>${opts.map((o) => `<option value="${o.i}">${o.t}</option>`).join("")}</select></label>`).join("")}</div><button class="btn" type="button" data-act="check">Enviar informe</button>`);
-    const rows = $$(".rep-row", body);
-    if (api.solved()) rows.forEach((r) => ($("select", r).value = r.dataset.ans));
-    $("[data-act=check]", body).onclick = () => {
-      if (api.solved()) return;
-      const vals = rows.map((r) => $("select", r).value);
-      if (vals.some((v) => v === "")) return toast("Completa todas las situaciones", "info");
-      const bad = rows.filter((r, i) => vals[i] !== r.dataset.ans).length;
-      if (bad) api.wrong(`${bad} control${bad > 1 ? "es" : ""} incorrecto${bad > 1 ? "s" : ""}`);
-      else api.solve();
-    };
-  }
+  const SCENES = {
+    oficina: () => sk(`
+      <rect x="40" y="50" width="160" height="120" rx="8" fill="#CFE6FF"/><path d="M120 50V170M40 110H200"/>
+      <rect x="230" y="60" width="90" height="120" rx="6" fill="${W}"/>${txt(246, 88, "AVISO", 15)}<path d="M246 104h58M246 120h58M246 136h40" stroke-width="4"/>
+      <rect x="250" y="250" width="320" height="18" rx="4" fill="${W}"/><path d="M270 268v62M550 268v62"/>
+      <rect x="345" y="150" width="130" height="88" rx="8" fill="${N}"/><rect x="357" y="162" width="106" height="64" rx="4" fill="${LL}" stroke="${LL}" stroke-width="2"/>
+      <path d="M368 176h20v14h-20zM396 176h20v14h-20zM424 176h20v14h-20z" stroke="${N}" stroke-width="3" fill="${L}"/>${mono(368, 214, "D:\\ E:\\", 11)}
+      <path d="M330 238h160l12 12H318z" fill="${W}"/>
+      <rect x="512" y="230" width="44" height="20" rx="4" fill="${L}"/><path d="M502 240h10" />
+      <g data-unless="door"><rect x="630" y="90" width="130" height="240" rx="6" fill="${W}"/><circle cx="650" cy="215" r="7" fill="${L}"/></g>
+      <g data-when="door"><rect x="630" y="90" width="130" height="240" rx="6" fill="${N}"/><path d="M630 90l40 18v240l-40-18" fill="${W}"/>${txt(668, 220, "→", 40, L)}</g>
+      <rect x="598" y="190" width="26" height="42" rx="5" fill="${N}"/><circle cx="611" cy="203" r="4" fill="${L}" stroke="${L}"/>`),
+    servidores: () => sk(`
+      <rect x="60" y="270" width="170" height="14" rx="4" fill="${W}"/><rect x="70" y="170" width="150" height="96" rx="8" fill="${N}"/>${mono(84, 200, "&gt; nota...", 13, L)}${mono(84, 222, "TkFUQSAt", 13, W)}
+      <rect x="310" y="55" width="180" height="275" rx="10" fill="${N}"/>
+      <g data-unless="rack"><rect x="324" y="70" width="152" height="245" rx="6" fill="#5E6B8C" stroke="${W}" stroke-width="3"/><path d="M340 90l40 60M360 90l60 90" stroke="${W}" stroke-width="3" opacity=".5"/></g>
+      <g data-when="rack"><rect x="324" y="78" width="152" height="40" rx="4" fill="${W}"/><rect x="324" y="130" width="152" height="40" rx="4" fill="${L}"/><rect x="324" y="182" width="152" height="40" rx="4" fill="${W}"/><rect x="324" y="234" width="152" height="40" rx="4" fill="${W}"/>
+        <circle cx="342" cy="98" r="5" fill="${L}"/><circle cx="342" cy="150" r="5" fill="${N}"/><circle cx="342" cy="202" r="5" fill="${L}"/><circle cx="342" cy="254" r="5" fill="${L}"/>${txt(372, 156, "USB", 15)}</g>
+      <rect x="500" y="170" width="28" height="46" rx="5" fill="${W}"/><circle cx="514" cy="184" r="4" fill="${L}"/>
+      <rect x="580" y="60" width="180" height="120" rx="8" fill="${W}"/>${txt(594, 88, "BASE64 =", 15)}${mono(594, 112, "A-Z a-z 0-9 + /", 13)}${mono(594, 134, "relleno: =", 13)}${txt(594, 162, "¿cifrado? 🤔", 14)}`, "#DDE6F3"),
+    carlos: () => sk(`
+      <rect x="60" y="170" width="110" height="80" rx="10" fill="${W}"/><path d="M60 200h110"/><path d="M115 250v80"/><path d="M170 180v-30h22v14h-22" fill="${R}" stroke="${N}"/>${txt(84, 232, "BUZÓN", 13)}
+      <rect x="220" y="60" width="130" height="100" rx="6" fill="#E9C994"/><rect x="236" y="74" width="98" height="72" rx="4" fill="#FFF6D8"/>${txt(246, 100, "Manual", 13)}${txt(246, 120, "CyberChef", 13)}<circle cx="285" cy="70" r="5" fill="${R}"/>
+      <rect x="330" y="262" width="320" height="16" rx="4" fill="${W}"/><path d="M350 278v52M630 278v52"/>
+      <g data-unless="caja"><rect x="420" y="205" width="120" height="57" rx="8" fill="#C7A06A"/><rect x="465" y="222" width="30" height="26" rx="4" fill="${L}"/><path d="M470 222v-8a10 10 0 0 1 20 0v8"/></g>
+      <g data-when="caja"><rect x="420" y="225" width="120" height="37" rx="8" fill="#C7A06A"/><path d="M420 225l-10-40h120l10 40" fill="#E2BE88"/>${txt(450, 218, "✉ OK", 14, N)}</g>
+      <g data-when="caja"><rect x="665" y="236" width="100" height="26" rx="4" fill="${W}"/>${txt(678, 254, "SALIDA", 12)}<rect x="690" y="215" width="50" height="22" rx="3" fill="${LL}"/></g>`, "#FFFDF5"),
+    archivo: () => sk(`
+      <rect x="30" y="50" width="190" height="280" rx="6" fill="${W}"/><path d="M30 120h190M30 190h190M30 260h190"/>
+      ${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="${44 + i * 28}" y="66" width="20" height="50" rx="3" fill="${i % 2 ? L : LL}"/><rect x="${44 + i * 28}" y="136" width="20" height="50" rx="3" fill="${i % 2 ? LL : W}"/><rect x="${44 + i * 28}" y="206" width="20" height="50" rx="3" fill="${i % 3 ? L : W}"/>`).join("")}
+      <rect x="250" y="285" width="330" height="16" rx="4" fill="${W}"/><path d="M270 301v29M560 301v29"/>
+      ${[0, 1, 2, 3].map((i) => `<g transform="rotate(${[-4, 3, -2, 5][i]} ${293 + i * 72} 245)"><rect x="${265 + i * 72}" y="205" width="56" height="75" rx="4" fill="${W}"/><path d="M${275 + i * 72} 222h36M${275 + i * 72} 236h36M${275 + i * 72} 250h24" stroke-width="3"/>${txt(287 + i * 72, 274, String(i + 1), 13)}</g>`).join("")}
+      <rect x="615" y="150" width="150" height="180" rx="10" fill="${N}"/><rect x="630" y="168" width="120" height="60" rx="6" fill="${LL}" stroke="${LL}" stroke-width="2"/>${mono(640, 194, "SHA-256", 13)}${mono(640, 214, "VERIF.", 13)}
+      <rect x="630" y="250" width="120" height="16" rx="4" fill="${W}"/><path class="laser" d="M630 290h120" stroke="${R}" stroke-width="4"/>`, "#F1F4E6"),
+    lab: () => sk(`
+      <rect x="40" y="262" width="720" height="16" rx="4" fill="${W}"/><path d="M60 278v52M740 278v52"/>
+      <rect x="80" y="140" width="170" height="112" rx="8" fill="${N}"/>${txt(96, 168, "MONITOR A", 12, L)}${mono(96, 196, "1000 EUR", 13, W)}${mono(96, 222, "#a3f9…", 13, W)}
+      <rect x="290" y="140" width="170" height="112" rx="8" fill="${N}"/>${txt(306, 168, "MONITOR B", 12, L)}${mono(306, 196, "9000 EUR", 13, W)}${mono(306, 222, "#0c71…", 13, W)}
+      <rect x="540" y="110" width="200" height="150" rx="12" fill="${W}"/><rect x="600" y="70" width="80" height="50" rx="6" fill="${L}"/><path d="M640 120v40"/><rect x="590" y="160" width="100" height="40" rx="6" fill="${N}"/>${txt(560, 240, "SELLADORA SHA-256", 12)}
+      <g data-when="sello"><rect x="575" y="275" width="130" height="40" rx="6" fill="${L}" transform="rotate(-6 640 295)"/>${txt(588, 302, "SELLADO ✓", 16, N, 800, 'transform="rotate(-6 640 295)"')}</g>`, "#EAF0FA"),
+    copias: () => sk(`
+      <rect x="60" y="170" width="100" height="160" rx="8" fill="${W}"/>${[0, 1, 2, 3].map((i) => `<rect x="74" y="${186 + i * 34}" width="72" height="22" rx="3" fill="${LL}"/><circle cx="136" cy="${197 + i * 34}" r="4" fill="${L}"/>`).join("")}${txt(88, 322, "NAS", 13)}
+      <rect x="190" y="130" width="130" height="200" rx="8" fill="${N}"/>${[0, 1, 2, 3, 4].map((i) => `<rect x="204" y="${146 + i * 34}" width="102" height="22" rx="3" fill="${i === 2 ? L : W}"/>`).join("")}${txt(222, 320, "CINTAS LTO", 12, W)}
+      <rect x="360" y="270" width="170" height="14" rx="4" fill="${W}"/><rect x="370" y="170" width="150" height="96" rx="8" fill="${N}"/>${mono(384, 200, "RESTAURAR", 13, L)}${mono(384, 222, "4 copias", 13, W)}
+      <rect x="560" y="50" width="200" height="120" rx="8" fill="#CFE6FF"/><path d="M610 120a20 20 0 0 1 8-36 28 28 0 0 1 52 4 18 18 0 0 1 6 32z" fill="${W}"/>${txt(600, 155, "Plan 3-2-1", 14)}
+      <g class="van" data-anim="plan"><rect x="560" y="268" width="150" height="50" rx="10" fill="${W}"/><path d="M710 280h30l14 20v18h-44z" fill="${L}"/><circle cx="595" cy="322" r="12" fill="${N}"/><circle cx="700" cy="322" r="12" fill="${N}"/>${txt(575, 298, "OFFSITE", 13)}</g>`, "#F4F6F8"),
+    despacho: () => sk(`
+      <rect x="80" y="60" width="150" height="110" rx="6" fill="#E9C994"/><rect x="94" y="74" width="122" height="82" fill="#CFE6FF"/><path d="M94 156l40-40 30 26 22-18 30 32" fill="${L}"/>
+      <rect x="200" y="262" width="330" height="16" rx="4" fill="${W}"/><path d="M220 278v52M510 278v52"/>
+      <rect x="260" y="152" width="150" height="104" rx="8" fill="${N}"/><rect x="272" y="164" width="126" height="70" rx="4" fill="${LL}" stroke="${LL}"/>${txt(282, 190, "✉ 1 nuevo", 13)}${mono(282, 214, "AES-256", 12)}<path d="M320 256v6h30v-6"/>
+      <rect x="560" y="105" width="190" height="190" rx="12" fill="#9AA4B8"/>
+      <g data-unless="caja"><rect x="575" y="120" width="160" height="160" rx="8" fill="${W}"/><circle cx="655" cy="200" r="46" fill="${LL}"/><circle cx="655" cy="200" r="10" fill="${N}"/>${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => `<path d="M${655 + 38 * Math.cos((i * Math.PI) / 4)} ${200 + 38 * Math.sin((i * Math.PI) / 4)}L${655 + 46 * Math.cos((i * Math.PI) / 4)} ${200 + 46 * Math.sin((i * Math.PI) / 4)}" stroke-width="3"/>`).join("")}<path d="M712 190v20" stroke-width="7"/></g>
+      <g data-when="caja"><rect x="575" y="120" width="160" height="160" rx="8" fill="${N}"/><path d="M575 120l-50 20v160l50-20" fill="${W}"/><rect x="600" y="210" width="110" height="50" rx="6" fill="${L}"/>${txt(612, 241, "DISCO ✓", 15)}</g>`, "#FFF6EC"),
+    camara: () => sk(`
+      <rect x="40" y="252" width="220" height="16" rx="4" fill="${W}"/><path d="M60 268v62M240 268v62"/><rect x="80" y="200" width="140" height="52" rx="8" fill="${L}"/>${txt(108, 232, "KIT 7-ZIP", 14)}
+      <g class="vault-door-s" data-anim="k2"><circle cx="470" cy="190" r="140" fill="#B9C2D3"/><circle cx="470" cy="190" r="112" fill="${W}"/>
+        <g class="wheel"><circle cx="470" cy="190" r="22" fill="${N}"/>${[0, 1, 2, 3, 4, 5].map((i) => `<path d="M${470 + 26 * Math.cos((i * Math.PI) / 3)} ${190 + 26 * Math.sin((i * Math.PI) / 3)}L${470 + 80 * Math.cos((i * Math.PI) / 3)} ${190 + 80 * Math.sin((i * Math.PI) / 3)}" stroke-width="9"/>`).join("")}<circle cx="470" cy="190" r="80" stroke-width="6"/></g></g>
+      <rect x="690" y="110" width="90" height="190" rx="10" fill="${N}"/>
+      <rect x="705" y="128" width="60" height="60" rx="6" fill="${W}"/><path d="M735 145v26" stroke-width="7"/>${txt(712, 205, "LLAVE 1", 11, W)}
+      <rect x="705" y="218" width="60" height="60" rx="6" fill="${W}"/><path d="M735 235v26" stroke-width="7"/>${txt(712, 294, "LLAVE 2", 11, W)}
+      <g data-when="k1"><rect x="705" y="128" width="60" height="60" rx="6" fill="${L}"/>${txt(722, 166, "✓", 26)}</g>
+      <g data-when="k2"><rect x="705" y="218" width="60" height="60" rx="6" fill="${L}"/>${txt(722, 256, "✓", 26)}</g>`, "#E8ECF2"),
+    salida: () => sk(`
+      <rect x="190" y="90" width="420" height="220" rx="14" fill="${N}"/>${txt(214, 124, "PANEL DE CONTROL · PRINCIPIOS DE SEGURIDAD", 13, L)}
+      ${["C", "I", "D", "A", "✗"].map((t, i) => `<rect x="${214 + i * 78}" y="150" width="62" height="120" rx="8" fill="${i === 4 ? "#FFD8D8" : i % 2 ? LL : L}"/>${txt(235 + i * 78, 222, t, 28)}`).join("")}
+      <g data-unless="sorted"><rect x="655" y="80" width="115" height="250" rx="6" fill="${W}"/>${txt(668, 70, "SALIDA", 18, R)}<circle cx="672" cy="210" r="7" fill="${R}"/></g>
+      <g data-when="sorted"><rect x="655" y="80" width="115" height="250" rx="6" fill="${L}"/><path d="M655 80l35 16v250l-35-16" fill="${W}"/>${txt(668, 70, "SALIDA", 18, "#4b7a00")}${txt(705, 220, "→", 46)}</g>`, "#EEF2E3"),
+  };
 
-  /* ---------------- Definición de fases ---------------- */
-  const STAGES = [
+  /* =============== SALAS =============== */
+  const P = (k) => CUR.parts[k];
+  const ROOMS = [
+    /* ---------------- SALA 1 ---------------- */
     {
-      id: "disco", short: "Disco", title: "El disco robado", art: "ssd", keyword: "CIFRADO",
-      story: () => `Un empleado ha perdido un <b>SSD externo</b> con <code>clientes.xlsx</code>, <code>facturas.pdf</code>, <code>contratos.pdf</code> y <code>nominas.xlsx</code>. El portátil tenía contraseña de Windows, pero el disco <b>no estaba cifrado</b>. Un atacante lo conecta a su propio ordenador.`,
+      id: "oficina", short: "Oficina", title: "La oficina del empleado", scene: "oficina", keyword: "CIFRADO",
+      intro: "Aquí Jefa de Seguridad. El SSD perdido ha aparecido conectado al portátil del atacante. Mira qué ha podido ver… y busca cómo salir de la oficina: la puerta tiene teclado.",
       hints: [
-        "Piensa qué pasa si conectas el disco a OTRO ordenador: el Windows del dueño ni siquiera arranca, así que su contraseña no interviene.",
-        "Solo está protegido lo que necesita una clave para leerse: BitLocker, VeraCrypt, 7z con AES… Ocultar o comprimir no es cifrar.",
+        "Abre el portátil. Hay dos unidades: entra en las dos. En la carpeta Personal hay un pósit con una pista para la puerta.",
+        "En RRHH/empleados.csv: filtra por Logística y busca la fecha de alta más antigua. Puedes ordenar la tabla haciendo clic en las cabeceras.",
       ],
-      feedback: "Una contraseña de usuario no protege los datos frente a acceso físico. Para proteger datos <b>en reposo</b> necesitamos <b>cifrado</b>.",
-      steps: () => [
-        { key: "clasifica", title: "Analiza los dispositivos incautados", build: classifyDevices },
-        { key: "q1", title: "El SSD del empleado", build: mcq("¿Qué impide que el atacante lea directamente los archivos del SSD?", [
-          { t: "La contraseña de Windows protege automáticamente el contenido del disco." },
-          { t: "Nada: si el almacenamiento no estaba cifrado, los archivos se leen tal cual.", ok: true },
-          { t: "El RAID impide acceder a los datos." },
-          { t: "El sistema operativo bloquea cualquier acceso desde otro ordenador." },
-        ]) },
-        { key: "q2", title: "Medida correctora", build: mcq("Si mañana se pierde otro disco igual, ¿qué medida habría evitado la fuga?", [
-          { t: "Cifrar la unidad completa (BitLocker To Go, VeraCrypt…).", ok: true },
-          { t: "Poner una contraseña de Windows más larga." },
-          { t: "Marcar los archivos como ocultos." },
-          { t: "Formatear el disco en NTFS en lugar de FAT32." },
-        ]) },
+      lesson: "El atacante ha leído todo el SSD sin conocer ninguna contraseña: la contraseña de Windows no protege un disco conectado a otro equipo. La unidad <b>E:</b>, cifrada con <b>BitLocker</b>, ha resistido. Para proteger <b>datos en reposo</b> hace falta <b>cifrado</b>.",
+      objectives: [
+        { key: "drives", label: "Entra en las dos unidades del SSD" },
+        { key: "nota", label: "Encuentra el archivo sospechoso de la carpeta Personal" },
+        { key: "door", label: "Abre la puerta de la oficina" },
+      ],
+      hotspots: [
+        { id: "laptop", x: 320, y: 140, w: 190, h: 120, label: "Portátil del atacante", done: (a) => a.done("drives") && a.done("nota"), open: openExplorer },
+        { id: "poster", x: 225, y: 55, w: 100, h: 130, label: "Aviso", open: (a) => openWin("Aviso de seguridad", (b) => (b.innerHTML = `<div class="paper"><h3>AVISO A TODO EL PERSONAL</h3><p>Recordad que el ordenador de la empresa tiene contraseña.</p><p><b>Por tanto vuestros datos están seguros.</b></p><p class="small muted">— Dirección (2019)</p></div><p class="small muted">¿Seguro? Compruébalo tú mismo con el portátil del atacante.</p>`), { icon: "📌" }) },
+        { id: "door", x: 590, y: 180, w: 45, h: 62, label: "Teclado de la puerta", done: (a) => a.done("door"), open: (a) => openWin("Puerta de la oficina", (b, close) => {
+          b.insertAdjacentHTML("beforeend", `<p>Código de 6 dígitos.</p>`);
+          keypad(b, { len: 6, label: "CÓDIGO", onSubmit: async (v) => { if (v === D.badge) { a.complete("door", "Puerta abierta"); Snd.door(); setTimeout(close, 900); return true; } a.fail("Código incorrecto"); return false; } });
+        }, { icon: "🚪" }) },
       ],
     },
+    /* ---------------- SALA 2 ---------------- */
     {
-      id: "nota", short: "Nota", title: "La nota “cifrada”", art: "note", keyword: "CODIFICACIÓN",
-      story: () => `En el SSD aparece <code>nota_recuperada.txt</code>. Parece texto sin sentido y su autor presume de que está “cifrada”. Averigua qué contiene… y si de verdad estaba protegida. <b>Apunta lo que encuentres: lo necesitarás más adelante.</b>`,
+      id: "servidores", short: "Servidores", title: "La sala de servidores", scene: "servidores", keyword: "CODIFICACIÓN",
+      intro: "Estás en la sala de servidores. El armario rack pide un PIN de 4 dígitos. El autor de la nota que encontraste dice que la «cifró»… Revisa tu inventario.",
       hints: [
-        "No necesitas ninguna contraseña. Ese texto acabado en “=” tiene pinta de Base64. Prueba la operación “From Base64” en CyberChef o el comando de PowerShell.",
-        "Ejecuta el comando en la carpeta donde se descargó el archivo (normalmente: cd $HOME\\Downloads).",
+        "La nota del inventario está en Base64: no necesitas ninguna contraseña. Mira el monitor de la mesa.",
+        "En PowerShell, en la carpeta de Descargas: Get-Content con -Raw y luego [Convert]::FromBase64String. O CyberChef → From Base64.",
       ],
-      feedback: "Base64 es una <b>codificación</b>: cambia la forma de representar los datos, pero cualquiera puede revertirla sin clave. <b>Codificar ≠ cifrar.</b>",
-      steps: (d) => [
-        { key: "pin", title: "Descodifica la nota", build: chain(
-          (body) => {
-            body.insertAdjacentHTML("beforeend", `<p>Descarga la evidencia y descubre qué dice.</p>${fileList([{ name: "nota_recuperada.txt" }])}<p><b>Opción 1</b> · PowerShell, en la carpeta de descargas:</p>${cmd(`cd $HOME\\Downloads\n$t = Get-Content .\\nota_recuperada.txt -Raw\n[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($t))`)}<p><b>Opción 2</b> · <a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">CyberChef</a> → operación <b>From Base64</b>.</p>`);
-            bindFiles(body, [{ name: "nota_recuperada.txt", content: d.noteB64 }]);
-          },
-          answer({ label: "PIN del armario de servidores", placeholder: "4 dígitos", check: (v) => v.replace(/\D/g, "") === d.pin })
-        ) },
-        { key: "q1", title: "¿Estaba protegida?", build: mcq("Para leer la nota, ¿has necesitado alguna clave?", [
-          { t: "No: Base64 es una codificación y cualquiera puede revertirla.", ok: true },
-          { t: "Sí: la clave era el propio nombre del archivo." },
-          { t: "Sí: PowerShell usa automáticamente la contraseña de Windows." },
-          { t: "No, porque Base64 es un cifrado, aunque débil." },
-        ]) },
-        { key: "q2", title: "Detecta el cifrado real", build: mcq("¿Cuál de estos SÍ protege la confidencialidad de un archivo?", [
-          { t: "AES-256 con una contraseña robusta.", ok: true },
-          { t: "Convertirlo a Base64." },
-          { t: "Pasarlo a hexadecimal." },
-          { t: "Comprimirlo en ZIP sin contraseña." },
-        ]) },
+      lesson: "Has leído la nota <b>sin ninguna clave</b>: Base64 es una <b>codificación</b>, solo cambia la forma de representar los datos. <b>Codificar ≠ cifrar.</b> Un cifrado de verdad (AES, RSA…) exige una clave.",
+      objectives: [
+        { key: "rack", label: "Abre el armario rack" },
+        { key: "usb", label: "Recoge lo que hay dentro" },
+      ],
+      hotspots: [
+        { id: "monitor", x: 62, y: 160, w: 168, h: 115, label: "Monitor del técnico", open: () => openWin("Terminal del técnico", (b) => {
+          b.innerHTML = `<p>El técnico dejó abierto su manual de descodificación:</p>${cmd(`cd $HOME\\Downloads\n$t = Get-Content .\\nota_recuperada.txt -Raw\n[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($t))`)}<p>Alternativa: ${CHEF} → operación <b>From Base64</b>.</p><p class="small muted">La nota la tienes en tu inventario (abajo).</p>`;
+        }, { icon: "🖥️" }) },
+        { id: "keypad", x: 492, y: 160, w: 45, h: 66, label: "PIN del rack", done: (a) => a.done("rack"), open: (a) => openWin("Armario rack", (b, close) => {
+          keypad(b, { len: 4, label: "PIN", onSubmit: async (v) => { if (v === D.pin) { a.complete("rack", "Armario abierto"); Snd.door(); setTimeout(close, 900); return true; } a.fail("PIN incorrecto"); return false; } });
+        }, { icon: "🔢" }) },
+        { id: "usb", x: 320, y: 125, w: 160, h: 50, label: "Llavero USB", show: (a) => a.done("rack"), done: (a) => a.done("usb"), open: (a) => { a.give("llavero"); a.complete("usb", "Has cogido el llavero de Carlos"); a.radio("Ese llavero USB es de Carlos, de Finanzas: guarda sus claves criptográficas. Llévalo a su despacho, Ana le ha dejado una carta."); } },
+        { id: "board", x: 575, y: 55, w: 190, h: 130, label: "Pizarra", open: () => openWin("Pizarra", (b) => (b.innerHTML = `<div class="paper"><p><b>Base64</b> usa 64 símbolos: <code>A-Z a-z 0-9 + /</code> y rellena con <code>=</code>.</p><p>Convierte cualquier dato binario en texto «imprimible». Se usa en correos, certificados, claves PEM…</p><p>¿Oculta algo? 🤔</p></div>`), { icon: "📋" }) },
       ],
     },
+    /* ---------------- SALA 3 ---------------- */
     {
-      id: "llaves", short: "Llaves", title: "Las cuatro llaves", art: "keys", keyword: "CLAVE",
-      story: () => `Ana y Carlos tienen cada uno un <b>par de claves</b>: una pública y una privada. Ana quiere enviar a Carlos un mensaje confidencial y, además, <b>firmar</b> un contrato para que Carlos pueda comprobar que es suyo.`,
+      id: "carlos", short: "Carlos", title: "El despacho de Carlos", scene: "carlos", keyword: "CLAVE",
+      intro: "Despacho de Carlos. Ana le dejó una carta cifrada con RSA en el buzón. Tienes el llavero de Carlos con varias claves… solo una sirve para descifrar. Dentro de la carta está la combinación de la caja.",
       hints: [
-        "Para enviar algo a Carlos debes usar una clave que Carlos pueda compartir con todo el mundo.",
-        "Firmar = demostrar que eres tú: solo lo puede hacer quien tiene la clave privada. Verificar la firma lo puede hacer cualquiera con la clave pública del firmante.",
+        "La carta se cifró con la clave PÚBLICA de Carlos. ¿Con cuál de las claves del llavero se descifra?",
+        "CyberChef: From Base64 → RSA Decrypt. Pega la clave completa (con las líneas BEGIN/END). Encryption scheme: RSA-OAEP · Message Digest: SHA-1.",
       ],
-      feedback: "La clave pública puede compartirse; la privada queda bajo control exclusivo de su propietario. <b>Cifrar</b>: pública del destinatario. <b>Firmar</b>: privada del emisor.",
-      steps: () => [
-        { key: "dnd", title: "Coloca cada llave en su sitio", build: keysDnD },
-        { key: "q1", title: "La llave que nunca sale de casa", build: mcq("¿Qué clave no debería compartir Carlos nunca?", [
-          { t: "Su clave privada.", ok: true },
-          { t: "Su clave pública." },
-          { t: "Ninguna: puede compartir ambas si confía en la persona." },
-          { t: "Las dos, siempre." },
-        ]) },
-        { key: "q2", title: "Interceptación", build: mcq("Eva intercepta el mensaje cifrado y además tiene la clave pública de Carlos. ¿Puede leerlo?", [
-          { t: "No: solo la clave privada de Carlos puede descifrarlo.", ok: true },
-          { t: "Sí: con la clave pública se descifra lo que se cifró con ella." },
-          { t: "Sí, si también conoce el algoritmo usado." },
-          { t: "Solo si el mensaje es corto." },
-        ]) },
+      lesson: "Lo cifrado con la <b>clave pública</b> de alguien solo se descifra con su <b>clave privada</b>. Por eso la pública se puede repartir y la privada no sale nunca del llavero. Para responder a Ana se usa <b>su</b> clave pública.",
+      objectives: [
+        { key: "carta", label: "Recoge la carta del buzón" },
+        { key: "caja", label: "Descifra la carta y abre la caja" },
+        { key: "reply", label: "Responde a Ana de forma segura" },
+      ],
+      hotspots: [
+        { id: "mail", x: 55, y: 140, w: 140, h: 120, label: "Buzón", done: (a) => a.done("carta"), open: (a) => { a.give("carta"); a.complete("carta", "Tienes la carta cifrada de Ana"); openItem("carta"); } },
+        { id: "manual", x: 215, y: 55, w: 140, h: 110, label: "Manual CyberChef", open: () => openWin("Manual: descifrar con RSA", (b) => {
+          b.innerHTML = `<ol class="howto"><li>Abre ${CHEF}.</li><li>Pega el contenido de <code>carta_cifrada.txt</code> en <b>Input</b>.</li><li>Añade la operación <b>From Base64</b>.</li><li>Añade debajo <b>RSA Decrypt</b>.</li><li>En <b>RSA Private Key (PEM)</b> pega la clave completa, incluidas las líneas <code>-----BEGIN…</code> y <code>-----END…</code>.</li><li>Encryption Scheme: <b>RSA-OAEP</b> · Message Digest: <b>SHA-1</b>.</li></ol><p class="small muted">Las claves están en el llavero de tu inventario. Ábrelas con el Bloc de notas.</p>`;
+        }, { icon: "📘" }) },
+        { id: "box", x: 405, y: 175, w: 150, h: 92, label: "Caja con candado", done: (a) => a.done("caja"), open: (a) => openWin("Candado de combinación", (b, close) => {
+          b.insertAdjacentHTML("beforeend", `<p>Tres ruedas. La combinación está en la carta de Ana.</p>`);
+          wheels(b, 3, async (vals) => { if (vals.join("") === D.combo.join("")) { a.complete("caja", "¡Candado abierto!"); Snd.door(); a.radio("Dentro hay un borrador: Carlos tenía que contestar a Ana. Usa la bandeja de salida."); setTimeout(close, 900); return true; } a.fail("El candado no se abre"); return false; });
+        }, { icon: "🔒" }) },
+        { id: "tray", x: 650, y: 200, w: 125, h: 75, label: "Bandeja de salida", show: (a) => a.done("caja"), done: (a) => a.done("reply"), open: (a) => openWin("Responder a Ana", (b, close) => {
+          b.innerHTML = `<p>Carlos quiere contestar a Ana con información confidencial. <b>¿Con qué clave cierras el sobre?</b></p><div class="keys-pick">${[["pubC", "Pública de Carlos", "pub"], ["privC", "Privada de Carlos", "priv"], ["pubA", "Pública de Ana", "pub"], ["privA", "Privada de Ana", "priv"]].map(([k, t, c]) => `<button type="button" class="keycard ${c}" data-k="${k}"><span>${c === "priv" ? "🔑" : "🗝️"}</span>${t}</button>`).join("")}</div><div class="envelope-anim"></div>`;
+          const why = { pubC: "Con tu propia clave pública, solo TÚ podrías abrirlo. Ana no.", privC: "Lo «cifrado» con tu privada lo abre cualquiera con tu pública: eso es firmar, no cifrar.", privA: "Tú no tienes la clave privada de Ana… ni deberías tenerla nunca." };
+          $$("[data-k]", b).forEach((k) => (k.onclick = () => {
+            if (a.done("reply")) return;
+            if (k.dataset.k === "pubA") { k.classList.add("correct"); $(".envelope-anim", b).classList.add("go"); a.complete("reply", "Respuesta enviada: solo Ana podrá leerla"); setTimeout(close, 1400); }
+            else { k.classList.add("wrong"); a.fail(why[k.dataset.k]); }
+          }));
+        }, { icon: "✉️" }) },
       ],
     },
+    /* ---------------- SALA 4 ---------------- */
     {
-      id: "contrato", short: "Contrato", title: "El contrato manipulado", art: "docs", keyword: "INTEGRIDAD",
-      story: () => `Se han recuperado <b>cuatro copias</b> del mismo contrato. Solo una coincide con el original firmado; las demás se han manipulado de forma muy sutil. Tienes la huella SHA-256 del original.`,
+      id: "archivo", short: "Archivo", title: "El archivo de contratos", scene: "archivo", keyword: "INTEGRIDAD",
+      intro: "En la mesa hay cuatro copias del contrato de pago. Alguien ha manipulado tres. El verificador SHA-256 tiene la huella del original, pero solo escanea si le das la huella del documento que metes.",
       hints: [
-        "No necesitas interpretar el contenido: a simple vista parecen iguales. Compara su huella SHA-256.",
-        "Get-FileHash .\\contrato_*.txt calcula los cuatro de una vez. Compara los primeros y los últimos caracteres con el hash original.",
+        "Descarga los cuatro contratos (clic en cada uno). Get-FileHash .\\contrato_*.txt te da las cuatro huellas a la vez.",
+        "Mete en el verificador cada contrato con los 8 primeros caracteres de SU hash. Tienes que escanear los cuatro: tres serán evidencias.",
       ],
-      feedback: "El hash permite comprobar la <b>integridad</b> de un archivo. Si cambia un solo byte (un espacio, una letra de otro alfabeto…), el hash cambia.",
-      steps: (d) => [
-        { key: "pick", title: "Encuentra el contrato auténtico", build: (body, api) => {
-          body.insertAdjacentHTML("beforeend", `${fileList(d.contracts)}<div class="hashbox"><span>SHA-256 DEL CONTRATO ORIGINAL</span><code>${d.contractOrigHash.toUpperCase()}</code></div><p>En PowerShell, dentro de la carpeta de descargas:</p>${cmd("Get-FileHash .\\contrato_*.txt -Algorithm SHA256 | Format-List Path, Hash")}<p class="q">¿Qué contrato coincide con el original?</p><div class="options grid4">${d.contracts.map((c, i) => `<button type="button" class="opt" ${i === d.authentic ? "data-ok" : ""}><span class="opt-letter">${i + 1}</span><span class="opt-text">contrato_${i + 1}</span><span class="opt-mark" aria-hidden="true"></span></button>`).join("")}</div>`);
-          bindFiles(body, d.contracts);
-          bindOptions(body, api, "Ese hash no coincide");
-        } },
-        { key: "proof", title: "Demuestra que lo has calculado", build: answer({
-          label: `6 primeros caracteres del hash de <code>contrato_${d.askIdx + 1}.txt</code>`, placeholder: "6 caracteres",
-          check: (v) => norm(v).length >= 6 && norm(v).slice(0, 6) === d.contracts[d.askIdx].hash.slice(0, 6).toUpperCase(),
-        }) },
-        { key: "q1", title: "¿Se ve a simple vista?", build: mcq("Abre los contratos falsos con el Bloc de notas. ¿Por qué no basta con mirarlos?", [
-          { t: "Porque un cambio puede ser invisible (un espacio, una letra de otro alfabeto) y el hash lo detecta igualmente.", ok: true },
-          { t: "Porque el Bloc de notas no puede abrir archivos manipulados." },
-          { t: "Porque el hash también descifra el contenido." },
-          { t: "Sí basta: si se ven iguales, son iguales." },
-        ]) },
+      lesson: "A simple vista los cuatro eran iguales: los cambios eran un espacio de más, un espacio duro o una «а» cirílica. El <b>hash</b> detecta cualquier cambio en un solo byte: es la herramienta para comprobar la <b>integridad</b>.",
+      objectives: [
+        { key: "auth", label: "Identifica el contrato auténtico" },
+        { key: "evid", label: "Registra los 3 contratos manipulados como evidencia" },
+      ],
+      hotspots: [
+        ...[0, 1, 2, 3].map((i) => ({ id: "doc" + i, x: 258 + i * 72, y: 196, w: 66, h: 90, label: `Contrato ${i + 1}`, done: (a) => (a.get("scanned") || []).includes(i), open: () => openWin(`contrato_${i + 1}.txt`, (b) => {
+          b.innerHTML = `<pre class="paper mono-paper">${esc(D.contracts[i].content)}</pre><p class="small muted">Parece idéntico a los demás… ¿lo es?</p>`;
+          files(b, [D.contracts[i]]);
+        }, { icon: "📄" }) })),
+        { id: "scanner", x: 608, y: 145, w: 165, h: 192, label: "Verificador SHA-256", done: (a) => a.done("auth") && a.done("evid"), open: openScanner },
       ],
     },
+    /* ---------------- SALA 5 ---------------- */
     {
-      id: "avalancha", short: "Avalancha", title: "Un solo cambio", art: "avalanche", keyword: "HASH",
-      story: () => `Vas a comprobar con tus propios ojos qué le ocurre a un hash cuando cambias <b>un único carácter</b> de un archivo.`,
+      id: "lab", short: "Laboratorio", title: "El laboratorio de huellas", scene: "lab", keyword: "HASH",
+      intro: "Laboratorio de huellas. Antes de autorizar la transferencia hay que demostrar cómo se comporta SHA-256 cuando cambia un solo carácter. Y la selladora solo acepta transferencias con un hash muy concreto…",
       hints: [
-        "El contenido debe ser EXACTAMENTE el indicado (mayúsculas, dos puntos, espacios). Si dudas, crea el archivo con el comando Set-Content que se muestra.",
-        "Compara ambos hashes carácter por carácter: ¿cuántos coinciden en la misma posición?",
+        "El contenido debe ser EXACTO. Créalo con el comando Set-Content que aparece en el monitor y pega el hash completo (64 caracteres).",
+        "Selladora: no se puede «calcular hacia atrás». Ejecuta el bucle de PowerShell: prueba números hasta que el hash empiece por 000.",
       ],
-      feedback: "Un cambio mínimo en la entrada produce un hash completamente distinto (<b>efecto avalancha</b>). Y a partir del hash no se puede reconstruir el mensaje: es de un solo sentido.",
-      steps: (d) => [
-        { key: "h1", title: "Crea mensaje.txt y calcula su hash", build: chain(
-          `<p>Crea un archivo <code>mensaje.txt</code> con este contenido exacto:</p><div class="hashbox"><code>${esc(d.msg1)}</code></div><p>Con el Bloc de notas o directamente:</p>${cmd(`Set-Content .\\mensaje.txt "${d.msg1}" -NoNewline\nGet-FileHash .\\mensaje.txt -Algorithm SHA256`)}`,
-          answer({ label: "8 primeros caracteres del hash", placeholder: "8 caracteres", check: hexPrefixCheck(d.msg1Prefixes) })
-        ) },
-        { key: "h2", title: "Cambia 1000 por 9000", build: chain(
-          `<p>Modifica <b>solo</b> <code>1000</code> por <code>9000</code> y vuelve a calcular el hash.</p>${cmd(`Set-Content .\\mensaje.txt "${d.msg2}" -NoNewline\nGet-FileHash .\\mensaje.txt -Algorithm SHA256`)}`,
-          answer({ label: "8 primeros caracteres del nuevo hash", placeholder: "8 caracteres", check: hexPrefixCheck(d.msg2Prefixes) })
-        ) },
-        { key: "q1", title: "¿Qué ha pasado?", build: mcq("¿Qué ha ocurrido con el hash?", [
-          { t: "Solo han cambiado algunos caracteres." },
-          { t: "Ha permanecido prácticamente igual." },
-          { t: "Ha cambiado completamente.", ok: true },
-          { t: "El hash ha dejado de funcionar." },
-        ]) },
-        { key: "q2", title: "¿Y al revés?", build: mcq("Alguien solo tiene el hash del mensaje. ¿Puede “descifrarlo” para obtener el texto original?", [
-          { t: "No: una función hash es de un solo sentido; no se descifra.", ok: true },
-          { t: "Sí, con la clave pública adecuada." },
-          { t: "Sí, porque SHA-256 es un cifrado simétrico." },
-          { t: "Solo si el archivo es de texto." },
-        ]) },
+      lesson: "Cambiar <b>un carácter</b> cambia el hash por completo (<b>efecto avalancha</b>), y no hay forma de predecir el resultado: para conseguir un hash concreto solo queda <b>probar y probar</b>. Por eso nadie puede fabricar un documento falso con la misma huella.",
+      objectives: [
+        { key: "a", label: "Monitor A: hash del mensaje original" },
+        { key: "b", label: "Monitor B: hash tras cambiar un carácter" },
+        { key: "sello", label: "Consigue el sello de la transferencia" },
+      ],
+      hotspots: [
+        { id: "ma", x: 75, y: 135, w: 180, h: 122, label: "Monitor A", done: (a) => a.done("a"), open: (a) => openWin("Monitor A", (b, close) => {
+          b.innerHTML = `<p>Crea <code>mensaje.txt</code> con este contenido exacto y calcula su SHA-256:</p><div class="hashbox"><code>${esc(D.msg1)}</code></div>${cmd(`Set-Content .\\mensaje.txt "${D.msg1}" -NoNewline\nGet-FileHash .\\mensaje.txt -Algorithm SHA256`)}`;
+          answer(b, { label: "Hash completo (64 caracteres)", placeholder: "pega aquí el hash", check: async (v) => { if (D.msg1Set.has(hexIn(v))) { a.set("hashA", hexIn(v)); a.complete("a", "Hash A registrado"); close(); return true; } a.fail("Ese hash no corresponde al mensaje"); return false; } });
+        }, { icon: "🖥️" }) },
+        { id: "mb", x: 285, y: 135, w: 180, h: 122, label: "Monitor B", show: (a) => a.done("a"), done: (a) => a.done("b"), open: (a) => openWin("Monitor B", (b) => {
+          b.innerHTML = `<p>Cambia <b>solo</b> <code>1000</code> por <code>9000</code> y vuelve a calcular:</p>${cmd(`Set-Content .\\mensaje.txt "${D.msg2}" -NoNewline\nGet-FileHash .\\mensaje.txt -Algorithm SHA256`)}<div class="diff-out"></div>`;
+          const showDiff = () => diffViz($(".diff-out", b), a.get("hashA"), a.get("hashB"));
+          if (a.done("b")) return showDiff();
+          answer(b, { label: "Nuevo hash completo", placeholder: "pega aquí el hash", check: async (v) => { if (D.msg2Set.has(hexIn(v))) { a.set("hashB", hexIn(v)); $("form", b).remove(); await showDiff(); a.complete("b", "Comparación completada"); return true; } a.fail("Ese hash no corresponde al mensaje modificado"); return false; } });
+        }, { icon: "🖥️", wide: true }) },
+        { id: "sell", x: 535, y: 65, w: 215, h: 200, label: "Selladora", show: (a) => a.done("b"), done: (a) => a.done("sello"), open: (a) => openWin("Selladora SHA-256", (b, close) => {
+          b.innerHTML = `<p>Norma de la empresa: solo se sellan transferencias cuyo SHA-256 <b>empiece por <code>${C.MINING_PREFIX}</code></b>. Para conseguirlo se añade al final <code> #número</code>. ¿Qué número? Nadie lo sabe: hay que probar.</p>
+            <div class="hashbox"><code>${esc(D.msg1)} #<span class="hl">?</span></code></div>
+            ${cmd(`$base = "${D.msg1}"\n$sha = [Security.Cryptography.SHA256]::Create()\nfor ($n = 0; $n -lt 100000; $n++) {\n  $texto = "$base #$n"\n  $hash = -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($texto)) | ForEach-Object { $_.ToString("x2") })\n  if ($hash.StartsWith("${C.MINING_PREFIX}")) { "$n  ->  $hash"; break }\n}`)}
+            <p class="small muted">Prueba primero a mano unos cuantos números en ${CHEF} (operación SHA2) para ver lo imposible que es acertar.</p><div class="stamp-zone"></div>`;
+          answer(b, { label: "Número que consigue el sello", placeholder: "p. ej. 1234", btn: "Sellar", check: async (v) => {
+            if (await CN.checkMining(D, v.trim())) { const h = await CN.sha256(D.mineText(v.trim())); $(".stamp-zone", b).innerHTML = `<div class="stamp">SELLADO</div><p class="mono small">${h}</p>`; a.complete("sello", "Transferencia sellada"); Snd.door(); return true; }
+            a.fail(`Con ese número el hash no empieza por ${C.MINING_PREFIX}`); return false; } });
+        }, { icon: "🔏", wide: true }) },
       ],
     },
+    /* ---------------- SALA 6 ---------------- */
     {
-      id: "backup", short: "Copias", title: "La copia que miente", art: "backup", keyword: "RESPALDO",
-      story: () => `Para recuperar los datos del SSD perdido vas a usar las <b>copias de seguridad</b> de anoche. El sistema de copias genera un manifiesto <code>SHA256SUMS.txt</code> con la huella de cada archivo. Antes de restaurar nada, toca verificar.`,
+      id: "copias", short: "Copias", title: "La sala de copias de seguridad", scene: "copias", keyword: "RESPALDO",
+      intro: "Hay que restaurar los datos desde las copias de anoche. Ojo: una de ellas no es fiable. Y luego, diseña un plan de copias que aguante cualquier desastre.",
       hints: [
-        "Abre SHA256SUMS.txt: cada línea es «hash  nombre_de_archivo». Calcula el hash de cada copia y busca la que no coincide.",
-        "Get-FileHash .\\backup_*.txt calcula todos. Compara cada uno con su línea del manifiesto.",
+        "Compara cada copia con su línea de SHA256SUMS.txt: Get-FileHash .\\backup_*.txt",
+        "3-2-1: tres copias, en al menos dos tipos de soporte distintos, al menos una fuera de la oficina. Y la que sale fuera… ¿cómo viaja?",
       ],
-      feedback: "Una copia que no se verifica es una copia en la que no se puede confiar. El hash comprueba la <b>integridad</b> del respaldo; la regla <b>3-2-1</b> y el <b>cifrado</b> de las copias completan la protección.",
-      steps: (d) => [
-        { key: "corrupt", title: "Verifica las copias", build: (body, api) => {
-          const files = [...d.backups, { name: "SHA256SUMS.txt", content: d.manifest }];
-          body.insertAdjacentHTML("beforeend", `${fileList(files)}${cmd("Get-Content .\\SHA256SUMS.txt\nGet-FileHash .\\backup_*.txt -Algorithm SHA256 | Format-Table Hash, Path")}<p class="q">¿Qué copia está corrupta?</p><div class="options grid2">${d.backups.map((b, i) => `<button type="button" class="opt" ${i === d.corrupt ? "data-ok" : ""}><span class="opt-letter">${i + 1}</span><span class="opt-text">${b.name}</span><span class="opt-mark" aria-hidden="true"></span></button>`).join("")}</div>`);
-          bindFiles(body, files);
-          bindOptions(body, api, "Esa copia coincide con el manifiesto");
-        } },
-        { key: "q1", title: "¿Y ahora qué?", build: mcq("Has detectado una copia corrupta. ¿Qué haces?", [
-          { t: "No restaurarla: recuperar ese archivo desde otra copia (otro soporte o ubicación) y revisar el sistema de copias.", ok: true },
-          { t: "Restaurarla igualmente: solo ha cambiado un número." },
-          { t: "Recalcular el hash y escribirlo en el manifiesto para que coincida." },
-          { t: "Borrar el manifiesto, que es el que está mal." },
-        ]) },
-        { key: "q2", title: "Regla 3-2-1", build: mcq("¿Qué plan cumple la regla 3-2-1?", [
-          { t: "3 copias de los datos, en 2 soportes distintos, 1 de ellas fuera de la oficina.", ok: true },
-          { t: "3 copias en el mismo disco externo, en 2 carpetas, 1 comprimida." },
-          { t: "Un RAID 1 con 2 discos y 1 SAI." },
-          { t: "2 copias en la nube y 1 contraseña para las dos." },
-        ]) },
-        { key: "q3", title: "La copia que viaja", build: mcq("La copia externa viaja cada viernes en un disco USB a casa del gerente. ¿Qué le falta?", [
-          { t: "Cifrarla: una copia contiene la misma información confidencial que el original.", ok: true },
-          { t: "Comprimirla para que ocupe menos." },
-          { t: "Ponerle un nombre que no llame la atención." },
-          { t: "Nada: las copias de seguridad no hace falta protegerlas." },
-        ]) },
+      lesson: "Una copia sin verificar es una copia en la que no se puede confiar: el <b>manifiesto de hashes</b> detecta la corrupción. La regla <b>3-2-1</b> garantiza la disponibilidad, y la copia que sale del edificio debe ir <b>cifrada</b>: si no, volvemos al SSD de la sala 1.",
+      objectives: [
+        { key: "verify", label: "Detecta la copia corrupta" },
+        { key: "plan", label: "Diseña un plan 3-2-1 seguro" },
+      ],
+      hotspots: [
+        { id: "console", x: 362, y: 160, w: 166, h: 120, label: "Consola de restauración", done: (a) => a.done("verify"), open: (a) => openWin("Consola de restauración", (b, close) => {
+          b.innerHTML = `<p>Copias de anoche y su manifiesto de huellas:</p>`;
+          files(b, [...D.backups, { name: "SHA256SUMS.txt", content: D.manifest }]);
+          b.insertAdjacentHTML("beforeend", `${cmd("Get-Content .\\SHA256SUMS.txt\nGet-FileHash .\\backup_*.txt -Algorithm SHA256 | Format-Table Hash, Path")}<p class="q">Marca la copia corrupta y demuestra su hash real:</p><div class="radio-list">${D.backups.map((x, i) => `<label class="check"><input type="radio" name="bk" value="${i}"><span>${x.name}</span></label>`).join("")}</div>`);
+          answer(b, { label: "8 primeros caracteres de su hash REAL (el que tú calculas)", placeholder: "8 caracteres", btn: "Bloquear copia", check: async (v) => {
+            const sel = $("input[name=bk]:checked", b);
+            if (!sel) { toast("Marca primero una copia", "info"); return false; }
+            const i = +sel.value, real = (await CN.sha256(D.backups[i].content)).slice(0, 8);
+            if (hexIn(v).slice(0, 8) !== real) { a.fail("Ese no es el hash de esa copia"); return false; }
+            if (i !== D.corrupt) { a.fail("Esa copia coincide con el manifiesto: está sana"); return false; }
+            a.complete("verify", "Copia corrupta bloqueada"); setTimeout(close, 700); return true; } });
+        }, { icon: "🖥️", wide: true }) },
+        { id: "plan", x: 555, y: 45, w: 210, h: 130, label: "Plan 3-2-1", done: (a) => a.done("plan"), open: (a) => openWin("Diseña el plan de copias", (b, close) => {
+          const LOCS = [
+            { t: "Disco interno del servidor", m: "Disco", off: false },
+            { t: "NAS del rack", m: "Disco", off: false },
+            { t: "Cinta LTO en el armario ignífugo", m: "Cinta", off: false },
+            { t: "Nube de un proveedor externo", m: "Nube", off: true },
+            { t: "Disco USB en casa del gerente", m: "Disco", off: true },
+          ];
+          b.innerHTML = `<p>Elige <b>exactamente 3 ubicaciones</b> para las copias y decide cuáles van cifradas.</p><div class="plan">${LOCS.map((l, i) => `<div class="plan-row"><label class="check"><input type="checkbox" data-i="${i}"><span>${l.t}</span></label><span class="tag">${l.m}</span><span class="tag ${l.off ? "off" : ""}">${l.off ? "Fuera" : "Oficina"}</span><label class="lock"><input type="checkbox" data-lock="${i}"><span>🔒 Cifrada</span></label></div>`).join("")}</div><div class="plan-check"></div><button class="btn" type="button">Aprobar plan</button>`;
+          $(".btn", b).onclick = () => {
+            const sel = $$("[data-i]:checked", b).map((x) => +x.dataset.i);
+            const locked = (i) => $(`[data-lock="${i}"]`, b).checked;
+            const rules = [
+              { ok: sel.length === 3, t: "3 copias" },
+              { ok: new Set(sel.map((i) => LOCS[i].m)).size >= 2, t: "2 tipos de soporte distintos" },
+              { ok: sel.some((i) => LOCS[i].off), t: "1 copia fuera de la oficina" },
+              { ok: sel.filter((i) => LOCS[i].off).every(locked) && sel.length > 0, t: "Las copias que salen fuera van cifradas" },
+            ];
+            $(".plan-check", b).innerHTML = rules.map((r) => `<span class="rule ${r.ok ? "ok" : "ko"}">${r.ok ? "✓" : "✗"} ${r.t}</span>`).join("");
+            if (rules.every((r) => r.ok)) { a.complete("plan", "Plan aprobado: la copia externa sale hacia su destino"); Snd.door(); setTimeout(close, 1400); }
+            else a.fail("El plan no cumple todas las reglas");
+          };
+        }, { icon: "🗂️", wide: true }) },
       ],
     },
+    /* ---------------- SALA 7 ---------------- */
     {
-      id: "simetrico", short: "AES", title: "El mensaje cifrado", art: "envelope", keyword: "SIMÉTRICO",
-      story: (d) => `En el correo del director aparece un mensaje cifrado con <b>AES-256</b>. Según el procedimiento interno, la clave es el <b>SHA-256</b> del texto <code>PIN:GRUPO</code>, usando el PIN del armario de servidores que descubriste en la fase 2. Para vuestro grupo: <code>&lt;PIN&gt;:${d.code}</code>.`,
+      id: "despacho", short: "Despacho", title: "El despacho del director", scene: "despacho", keyword: "SIMÉTRICO",
+      intro: "Despacho del director. Su ordenador guarda un correo cifrado con AES-256 que explica cómo abrir la caja fuerte. Según el procedimiento interno, la clave es el SHA-256 del texto PIN:GRUPO… ¿recuerdas el PIN del rack?",
       hints: [
-        "El PIN es el número de 4 dígitos de la nota en Base64 (fase 2). El texto queda, por ejemplo, 1234:" + "ABCD" + " — sin espacios. Su SHA-256 (64 caracteres hexadecimales) es la clave.",
-        "En CyberChef: operación «AES Decrypt». Key → tipo HEX, IV → tipo HEX, Mode: CBC, Input: Hex, Output: Raw. Pega el texto cifrado en la caja Input.",
+        "El PIN es el de la sala 2 (está en la nota del inventario). El texto queda PIN:GRUPO, sin espacios. Su SHA-256 (64 caracteres) es la clave.",
+        "CyberChef → AES Decrypt. Key: HEX · IV: HEX · Mode: CBC · Input: Hex · Output: Raw. Luego gira el dial en el orden que diga el mensaje y pulsa «Fijar» en cada número.",
       ],
-      feedback: "Has descifrado con la <b>misma clave</b> que se usó para cifrar: eso es <b>cifrado simétrico</b>. Es rápido, pero hay que hacer llegar la clave de forma segura. HTTPS lo resuelve combinando asimétrico (para intercambiar la clave) y simétrico (para los datos).",
-      steps: (d) => [
-        { key: "key", title: "Obtén la clave AES", build: chain(
-          `<p>Calcula el SHA-256 del texto <code>PIN:${d.code}</code> (sustituye PIN por el tuyo).</p>${cmd(`$s = "PIN:${d.code}"\n-join ([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($s)) | ForEach-Object { $_.ToString("x2") })`)}<p>O en <a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">CyberChef</a> con la operación <b>SHA2</b> (tamaño 256).</p>`,
-          answer({ label: "Clave (64 caracteres hexadecimales)", placeholder: "64 caracteres", check: (v) => v.trim().toLowerCase().replace(/\s/g, "") === d.keyHex })
-        ) },
-        { key: "vault", title: "Descifra el mensaje", build: chain(
-          `<div class="hashbox"><span>IV (HEX)</span><code>${d.ivHex}</code></div><div class="hashbox"><span>MENSAJE CIFRADO (HEX)</span><code class="wrap">${d.cipherHex}</code></div><ol class="howto"><li>Abre <a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">CyberChef</a> y arrastra la operación <b>AES Decrypt</b>.</li><li><b>Key</b>: tu clave, tipo HEX. <b>IV</b>: el de arriba, tipo HEX.</li><li><b>Mode</b>: CBC · <b>Input</b>: Hex · <b>Output</b>: Raw.</li><li>Pega el mensaje cifrado en la caja <b>Input</b>.</li></ol>`,
-          answer({ label: "Código de la caja fuerte", placeholder: "6 caracteres", check: (v) => norm(v) === d.vault })
-        ) },
-        { key: "q1", title: "¿Qué tipo de cifrado?", build: mcq("Para descifrar has usado la misma clave con la que se cifró. Esto es…", [
-          { t: "Cifrado simétrico.", ok: true },
-          { t: "Cifrado asimétrico." },
-          { t: "Una función hash." },
-          { t: "Una firma digital." },
-        ]) },
-        { key: "q2", title: "El punto débil", build: mcq("¿Cuál es el gran problema del cifrado simétrico?", [
-          { t: "Hay que hacer llegar la clave al destinatario de forma segura.", ok: true },
-          { t: "Es mucho más lento que el asimétrico." },
-          { t: "No se puede usar con archivos." },
-          { t: "Cualquiera puede descifrarlo sin la clave." },
-        ]) },
+      lesson: "Has descifrado con <b>la misma clave</b> con la que se cifró: eso es <b>cifrado simétrico</b>. Es muy rápido, pero obliga a hacer llegar la clave al destinatario de forma segura. HTTPS lo resuelve usando asimétrico para intercambiar la clave y simétrico para los datos.",
+      objectives: [
+        { key: "pc", label: "Entra en el ordenador del director" },
+        { key: "caja", label: "Abre la caja fuerte" },
+      ],
+      hotspots: [
+        { id: "pc", x: 255, y: 145, w: 160, h: 120, label: "Ordenador", done: (a) => a.done("pc"), open: (a) => openWin("Ordenador del director", (b) => {
+          const mail = () => {
+            b.innerHTML = `<div class="mail"><div class="mail-head"><b>De:</b> seguridad@cited.example · <b>Asunto:</b> Caja fuerte (AES-256-CBC)</div><div class="hashbox"><span>IV (HEX)</span><code>${D.ivHex}</code></div><div class="hashbox"><span>MENSAJE CIFRADO (HEX)</span><code class="wrap">${D.cipherHex}</code></div></div><ol class="howto"><li>${CHEF} → operación <b>AES Decrypt</b>.</li><li><b>Key</b>: la clave que acabas de usar, tipo HEX · <b>IV</b>: el de arriba, tipo HEX.</li><li><b>Mode</b>: CBC · <b>Input</b>: Hex · <b>Output</b>: Raw.</li><li>Pega el mensaje cifrado en <b>Input</b>.</li></ol>`;
+          };
+          if (a.done("pc")) return mail();
+          b.innerHTML = `<div class="login"><div class="login-ava">👤</div><b>Dirección · CITED Data</b><p class="small">Introduce la clave AES-256 (64 caracteres hexadecimales).</p></div><p>Procedimiento: clave = SHA-256 del texto <code>PIN:${D.code}</code></p>${cmd(`$s = "PIN:${D.code}"   # cambia PIN por el número de 4 cifras\n-join ([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($s)) | ForEach-Object { $_.ToString("x2") })`)}`;
+          answer(b, { label: "Clave AES (64 hex)", placeholder: "64 caracteres", btn: "Entrar", check: async (v) => { if (hexIn(v) === D.keyHex) { a.complete("pc", "Sesión iniciada"); mail(); return true; } a.fail("Clave incorrecta"); return false; } });
+        }, { icon: "💻", wide: true }) },
+        { id: "safe", x: 555, y: 100, w: 200, h: 200, label: "Caja fuerte", show: (a) => a.done("pc"), done: (a) => a.done("caja"), open: (a) => openWin("Caja fuerte", (b, close) => dial(b, async (seq) => {
+          const ok = seq.length === 3 && seq.every((s, i) => s.n === D.dial[i] && s.dir === D.dialDirs[i]);
+          if (ok) { a.complete("caja", "¡Caja fuerte abierta!"); Snd.door(); a.radio("Dentro está el disco con la copia de la «caja negra». Bájalo a la cámara acorazada."); setTimeout(close, 1000); return true; }
+          a.fail("La caja no se abre: revisa números y sentido de giro"); return false;
+        }), { icon: "🧰" }) },
       ],
     },
+    /* ---------------- SALA 8 ---------------- */
     {
-      id: "caja", short: "7-Zip", title: "La caja fuerte digital", art: "safe", keyword: "RECUPERACIÓN",
-      story: () => `La empresa necesita sacar documentos confidenciales de sus instalaciones. Vais a preparar un archivo cifrado con <b>7-Zip (AES-256)</b> y a <b>intercambiarlo con otro grupo</b>. Dentro irá vuestro <b>testigo</b>: el otro grupo solo podrá leerlo si le dais la contraseña.`,
+      id: "camara", short: "Cámara", title: "La cámara acorazada", scene: "camara", keyword: "RECUPERACIÓN",
+      intro: "La cámara acorazada necesita DOS llaves: la vuestra y la de otro equipo. Cada equipo prepara un paquete cifrado con 7-Zip con su testigo dentro y se lo pasa a otro. Sin contraseña, nadie lee nada.",
       hints: [
-        "En 7-Zip: clic derecho sobre la carpeta → 7-Zip → Añadir al archivo… La zona «Encriptación» está abajo a la derecha.",
-        "El testigo está dentro del .7z del otro grupo, en testigo_XXXX.txt. Necesitas su código de grupo (las 4 letras) y el valor TESTIGO.",
+        "7-Zip: clic derecho en la carpeta → 7-Zip → Añadir al archivo… → Formato 7z, AES-256, contraseña y «Cifrar nombres de archivo».",
+        "Llave 2: abre el .7z del otro equipo (pídeles la contraseña DESPUÉS de intentarlo sin ella) y copia su código de grupo y su TESTIGO.",
       ],
-      feedback: "El cifrado protege la <b>confidencialidad</b> de los datos almacenados. Sin la clave, el contenido es irrecuperable: la clave debe protegerse (y guardarse) correctamente.",
-      steps: (d) => {
-        const files = [
-          { name: "clientes.txt", content: "LISTADO DE CLIENTES (FICTICIO)\r\nCliente 001 - Alfa Logistica\r\nCliente 002 - Beta Sistemas\r\nCliente 003 - Gamma Consulting\r\n" },
-          { name: "facturas.txt", content: "FACTURAS PENDIENTES (FICTICIO)\r\nF-2025-001  1.250 EUR\r\nF-2025-002    830 EUR\r\nF-2025-003  4.100 EUR\r\n" },
-          { name: "nominas.txt", content: "NOMINAS (FICTICIO)\r\nEmpleado A  1.600 EUR\r\nEmpleado B  1.750 EUR\r\nEmpleado C  2.100 EUR\r\n" },
-          { name: `testigo_${d.code}.txt`, content: `TESTIGO DE SEGURIDAD\r\nCODIGO DE GRUPO: ${d.code}\r\nTESTIGO: ${d.token}\r\n` },
-        ];
-        return [
-          { key: "make", title: "Prepara el archivo cifrado", build: chain(
-            (body) => { body.insertAdjacentHTML("beforeend", `<p>Descarga los cuatro archivos y guárdalos en una carpeta llamada <code>CONFIDENCIAL</code>.</p>${fileList(files)}<ol class="howto"><li>Clic derecho en la carpeta → <b>7-Zip → Añadir al archivo…</b></li><li>Formato: <b>7z</b> · Método de cifrado: <b>AES-256</b></li><li>Contraseña: la que elija el grupo (¡no la digáis en voz alta!)</li><li>Activa <b>Cifrar nombres de archivo</b></li></ol>`); bindFiles(body, files); },
-            mcq("¿Qué opción de 7-Zip impide ver qué archivos hay dentro sin la contraseña?", [
-              { t: "Cifrar nombres de archivo.", ok: true },
-              { t: "Nivel de compresión: Ultra." },
-              { t: "Crear archivo SFX." },
-              { t: "Formato ZIP." },
-            ])
-          ) },
-          { key: "try", title: "Intercambio: intenta abrirlo sin contraseña", build: mcq("Pasad vuestro .7z a otro grupo y recibid el suyo. Intentad abrir el suyo SIN contraseña. ¿Qué veis?", [
-            { t: "7-Zip pide la contraseña y ni siquiera se ven los nombres de los archivos.", ok: true },
-            { t: "Se ven los archivos y se pueden abrir, pero salen en Base64." },
-            { t: "7-Zip lo abre si lo ejecutas como administrador." },
-            { t: "Se abre, porque el archivo se creó en el mismo aula." },
-          ], "Si se veían los nombres, el otro grupo olvidó activar «Cifrar nombres de archivo»: el contenido sigue protegido, pero los nombres revelan información.") },
-          { key: "token", title: "Recupera el testigo del otro grupo", build: chain(`<p>Pedid la contraseña al otro grupo, abrid su archivo y leed su <code>testigo_XXXX.txt</code>.</p>`, tokenExchange) },
-          { key: "q1", title: "La pieza clave", build: mcq("¿Qué elemento permite recuperar el contenido cifrado?", [
-            { t: "El hash." },
-            { t: "La clave/contraseña.", ok: true },
-            { t: "El nombre del archivo." },
-            { t: "El RAID." },
-          ]) },
-        ];
-      },
+      lesson: "Sin la contraseña el paquete es ilegible, y con «cifrar nombres» ni siquiera se ve qué contiene. La <b>clave</b> es lo único que permite recuperar los datos: si se pierde, se pierde todo; si se filtra, se filtra todo.",
+      objectives: [
+        { key: "kit", label: "Prepara vuestro paquete cifrado con 7-Zip" },
+        { key: "k1", label: "Llave 1: vuestro testigo" },
+        { key: "k2", label: "Llave 2: el testigo de otro equipo" },
+      ],
+      hotspots: [
+        { id: "kit", x: 40, y: 190, w: 225, h: 90, label: "Kit de transporte", done: (a) => a.done("kit"), open: (a) => openWin("Kit de transporte seguro", (b) => {
+          const fl = [
+            { name: "clientes.txt", content: "LISTADO DE CLIENTES (FICTICIO)\r\nCliente 001 - Alfa Logistica\r\nCliente 002 - Beta Sistemas\r\nCliente 003 - Gamma Consulting\r\n" },
+            { name: "facturas.txt", content: "FACTURAS PENDIENTES (FICTICIO)\r\nF-2025-001  1.250 EUR\r\nF-2025-002    830 EUR\r\nF-2025-003  4.100 EUR\r\n" },
+            { name: "nominas.txt", content: "NOMINAS (FICTICIO)\r\nEmpleado A  1.600 EUR\r\nEmpleado B  1.750 EUR\r\nEmpleado C  2.100 EUR\r\n" },
+            { name: `testigo_${D.code}.txt`, content: `TESTIGO DE SEGURIDAD\r\nCODIGO DE GRUPO: ${D.code}\r\nTESTIGO: ${D.token}\r\n` },
+          ];
+          b.innerHTML = `<p>Guarda estos archivos en una carpeta <code>CONFIDENCIAL</code>:</p>`;
+          files(b, fl);
+          b.insertAdjacentHTML("beforeend", `<ol class="howto"><li>Clic derecho en la carpeta → <b>7-Zip → Añadir al archivo…</b></li><li>Formato <b>7z</b> · Método de cifrado <b>AES-256</b></li><li>Contraseña: la que elijáis (¡no la digáis en voz alta!)</li><li>Activa <b>Cifrar nombres de archivo</b></li><li>Pasad el .7z a otro equipo (USB, carpeta compartida, Teams…). Que intenten abrirlo <b>sin</b> contraseña antes de dársela.</li></ol><label class="check big-check"><input type="checkbox" ${a.done("kit") ? "checked disabled" : ""}><span>Hemos creado el .7z cifrado y lo hemos entregado</span></label>`);
+          $(".big-check input", b).onchange = (e) => e.target.checked && a.complete("kit", "Paquete entregado");
+        }, { icon: "🧳", wide: true }) },
+        { id: "k1", x: 698, y: 120, w: 75, h: 78, label: "Llave 1", done: (a) => a.done("k1"), open: (a) => openWin("Llave 1 · vuestro testigo", (b, close) => {
+          b.innerHTML = `<p>Introduce el TESTIGO que hay en vuestro archivo <code>testigo_${D.code}.txt</code>.</p>`;
+          answer(b, { label: "Vuestro testigo", placeholder: "6 caracteres", btn: "Girar llave", check: async (v) => { if (norm(v) === D.token) { a.complete("k1", "Llave 1 girada"); setTimeout(close, 600); return true; } a.fail("Ese no es vuestro testigo"); return false; } });
+        }, { icon: "🗝️" }) },
+        { id: "k2", x: 698, y: 208, w: 75, h: 78, label: "Llave 2", done: (a) => a.done("k2"), open: (a) => openWin("Llave 2 · equipo aliado", (b, close) => {
+          b.innerHTML = `<p>Datos del <code>testigo_XXXX.txt</code> que hay dentro del .7z del otro equipo.</p><form class="answer two" novalidate><label><span>Código del otro equipo</span><input class="mono" maxlength="4" placeholder="XXXX"></label><label><span>Su testigo</span><input class="mono" maxlength="6" placeholder="6 caracteres"></label><button class="btn" type="submit">Girar llave</button></form>`;
+          $("form", b).onsubmit = async (e) => {
+            e.preventDefault();
+            const [ic, it] = $$("input", b), c = norm(ic.value), t = norm(it.value);
+            if (!c || !t) return toast("Rellena los dos campos", "info");
+            if (c === D.code) return toast("Tiene que ser el testigo de OTRO equipo", "info");
+            if ((await CN.token(c)) === t) { a.set("ally", c); a.complete("k2", `Llave 2 girada · aliado ${c}`); setTimeout(close, 600); }
+            else a.fail("Ese testigo no corresponde a ese equipo");
+          };
+        }, { icon: "🗝️" }) },
+      ],
     },
+    /* ---------------- SALA 9 ---------------- */
     {
-      id: "informe", short: "Informe", title: "Informe a dirección", art: "report", keyword: "CONFIDENCIALIDAD",
-      story: () => `Último paso: la dirección de CITED Data quiere un plan para que el incidente no se repita. Tu informe desbloqueará el sistema.`,
+      id: "salida", short: "Salida", title: "El panel de salida", scene: "salida", keyword: "CONFIDENCIALIDAD",
+      intro: "Última puerta. El panel de control solo libera la salida si clasificas cada medida que has usado según el principio de seguridad que protege. Lo que no protege nada, a la papelera.",
       hints: [
-        "Pregúntate en cada caso: ¿quiero ocultar el contenido (confidencialidad), detectar cambios (integridad), demostrar autoría o no perder los datos?",
-        "Base64 y los archivos ocultos no protegen nada: descártalos.",
+        "C = que nadie no autorizado lo lea · I = detectar cambios · D = que los datos sigan disponibles · A = demostrar quién lo hizo.",
+        "Base64 y los archivos ocultos no protegen nada.",
       ],
-      feedback: "Confidencialidad → cifrado · Integridad → hash · Autoría → firma · Disponibilidad → copias.",
-      steps: () => [{ key: "report", title: "Elige el control para cada situación", build: finalReport }],
+      lesson: "<b>Confidencialidad</b> → cifrado · <b>Integridad</b> → hash · <b>Disponibilidad</b> → copias · <b>Autenticidad</b> → firma con clave privada.",
+      objectives: [{ key: "sorted", label: "Clasifica las medidas en el panel" }, { key: "exit", label: "Sal del edificio" }],
+      hotspots: [
+        { id: "panel", x: 190, y: 85, w: 425, h: 230, label: "Panel de control", done: (a) => a.done("sorted"), open: (a) => openWin("Panel de control", (b, close) => {
+          const cards = a.shuffle([
+            { id: "bitlocker", t: "Unidad E: con BitLocker", bin: "C" },
+            { id: "aes", t: "Correo cifrado con AES-256", bin: "C" },
+            { id: "7z", t: "Paquete 7z con AES-256", bin: "C" },
+            { id: "rsa", t: "Carta cifrada con la pública de Carlos", bin: "C" },
+            { id: "hash", t: "Verificador SHA-256 de contratos", bin: "I" },
+            { id: "sums", t: "Manifiesto SHA256SUMS", bin: "I" },
+            { id: "321", t: "Plan de copias 3-2-1", bin: "D" },
+            { id: "firma", t: "Firmar con la clave privada de Ana", bin: "A" },
+            { id: "b64", t: "Nota en Base64", bin: "X" },
+            { id: "hidden", t: "Archivos marcados como ocultos", bin: "X" },
+          ]);
+          if (a.done("sorted")) { b.innerHTML = `<p>Panel completado. La puerta de salida está abierta.</p>`; return; }
+          sorter(b, {
+            cards, btn: "Enviar al panel",
+            bins: [{ id: "C", label: "Confidencialidad" }, { id: "I", label: "Integridad" }, { id: "D", label: "Disponibilidad" }, { id: "A", label: "Autenticidad" }, { id: "X", label: "🗑 No protege" }],
+            onCheck: (place) => {
+              if (Object.keys(place).length < cards.length) return toast("Coloca todas las tarjetas", "info");
+              const bad = cards.filter((c) => place[c.id] !== c.bin).length;
+              if (bad) return a.fail(`${bad} medida${bad > 1 ? "s" : ""} mal clasificada${bad > 1 ? "s" : ""}`);
+              a.complete("sorted", "¡Panel desbloqueado! La salida está abierta"); Snd.door(); setTimeout(close, 900);
+            },
+          });
+        }, { icon: "🎛️", wide: true }) },
+        { id: "exit", x: 650, y: 75, w: 125, h: 260, label: "SALIDA", show: (a) => a.done("sorted"), open: (a) => a.complete("exit", "¡Fuera!") },
+      ],
     },
   ];
 
-  /* ---------------- Estado ---------------- */
+  /* =============== OBJETOS DEL INVENTARIO =============== */
+  const ITEMS = {
+    nota: { name: "Nota sospechosa", icon: "📝", desc: "Encontrada en D:\\Personal. Su autor dice que está «cifrada».", files: () => [{ name: "nota_recuperada.txt", content: D.noteB64 }] },
+    llavero: { name: "Llavero USB de Carlos", icon: "🔑", desc: "Tres claves RSA en formato PEM. Ábrelas con el Bloc de notas.", files: () => [{ name: "carlos_publica.pem", content: S.rsa.carlosPub }, { name: "carlos_privada.pem", content: S.rsa.carlosPriv }, { name: "ana_publica.pem", content: S.rsa.anaPub }] },
+    carta: { name: "Carta cifrada de Ana", icon: "✉️", desc: "Cifrada con RSA-OAEP y codificada en Base64 para poder enviarla como texto.", files: () => [{ name: "carta_cifrada.txt", content: S.rsa.cipherB64 }], extra: () => `<div class="hashbox"><span>CONTENIDO</span><code class="wrap">${S.rsa.cipherB64}</code></div>` },
+  };
+  function openItem(id) {
+    const it = ITEMS[id];
+    openWin(it.name, (b) => { b.innerHTML = `<p>${it.desc}</p>${it.extra ? it.extra() : ""}`; files(b, it.files()); }, { icon: it.icon });
+  }
+  function renderInv() {
+    const el = $("#inv"); if (!el || !S) return;
+    el.hidden = false;
+    $(".inv-items", el).innerHTML = S.inv.length ? S.inv.map((id) => `<button type="button" class="inv-item" data-item="${id}" title="${ITEMS[id].name}"><span>${ITEMS[id].icon}</span><em>${ITEMS[id].name}</em></button>`).join("") : `<span class="muted small">Vacío</span>`;
+    $$(".inv-item", el).forEach((b) => (b.onclick = () => openItem(b.dataset.item)));
+  }
+
+  /* =============== MECÁNICAS ESPECIALES =============== */
+  // Sala 1: explorador de archivos del SSD
+  function openExplorer(a) {
+    const fsD = {
+      Clientes: [{ name: "clientes_2025.txt", content: "CLIENTES ACTIVOS (DATOS FICTICIOS)\r\nAlfa Logistica S.L.  - contrato 48.000 EUR\r\nBeta Sistemas S.A.   - contrato 12.500 EUR\r\nGamma Consulting     - contrato 30.200 EUR\r\n" }],
+      Facturas: [{ name: "facturas_T3.txt", content: "FACTURAS T3 (FICTICIO)\r\nF-0931  Alfa Logistica   4.100 EUR  PAGADA\r\nF-0932  Beta Sistemas      830 EUR  PENDIENTE\r\nF-0933  Gamma Consulting 1.250 EUR  PENDIENTE\r\n" }],
+      RRHH: [{ name: "empleados.csv", content: D.employeesCsv, table: true }, { name: "nominas_octubre.txt", content: "NOMINAS OCTUBRE (FICTICIO)\r\nTotal plantilla: 14 personas\r\nImporte total: 31.940 EUR\r\nTransferencia programada el dia 28\r\n" }],
+      Personal: [{ name: "postit.txt", content: "Recordatorio para mi:\r\nel codigo de la puerta de la oficina es el numero de TARJETA\r\ndel empleado de Logistica con MAS antiguedad.\r\n(Ya se que no deberia apuntarlo aqui...)\r\n" }, { name: "nota_recuperada.txt", content: D.noteB64, nota: true }],
+    };
+    openWin("Explorador · equipo del atacante", (b) => {
+      b.innerHTML = `<div class="explorer"><aside class="ex-side"><button type="button" data-drive="D">💾 SSD_EMPLEADO (D:)</button><button type="button" data-drive="E">🔒 BACKUP_FIN (E:)</button></aside><div class="ex-main"><div class="ex-path">Este equipo</div><div class="ex-view"><p class="muted">Selecciona una unidad del SSD conectado.</p></div></div></div>`;
+      const view = $(".ex-view", b), path = $(".ex-path", b);
+      const seen = new Set(a.get("seen") || []);
+      const mark = (k) => { seen.add(k); a.set("seen", [...seen]); if (seen.has("D") && seen.has("E")) a.complete("drives", "Has revisado las dos unidades"); };
+      function folder(name) {
+        path.textContent = `D:\\${name}`;
+        view.innerHTML = `<button type="button" class="ex-up">⬑ Volver</button>` + fsD[name].map((f, i) => `<button type="button" class="ex-item" data-f="${i}"><span class="ex-ico">${f.table ? "📊" : "📄"}</span>${f.name}</button>`).join("");
+        $(".ex-up", view).onclick = driveD;
+        $$("[data-f]", view).forEach((x) => (x.onclick = () => openFile(name, fsD[name][+x.dataset.f])));
+      }
+      function openFile(dir, f) {
+        Snd.click();
+        path.textContent = `D:\\${dir}\\${f.name}`;
+        let content;
+        if (f.table) {
+          const rows = f.content.trim().split(/\r\n/).map((r) => r.split(";"));
+          content = `<table class="ex-table"><thead><tr>${rows[0].map((h, i) => `<th data-c="${i}">${h} ⇅</th>`).join("")}</tr></thead><tbody>${rows.slice(1).map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+        } else content = `<pre class="paper mono-paper">${esc(f.content)}</pre>`;
+        view.innerHTML = `<button type="button" class="ex-up">⬑ Volver</button>${content}`;
+        $(".ex-up", view).onclick = () => folder(dir);
+        files(view, [f]);
+        if (f.table) {
+          let dirSort = 1;
+          $$("th", view).forEach((th) => (th.onclick = () => {
+            const i = +th.dataset.c, tb = $("tbody", view);
+            const key = (tr) => { const t = tr.children[i].textContent; const m = t.match(/^(\d{2})\/(\d{4})$/); return m ? +m[2] * 100 + +m[1] : t; };
+            const trs = $$("tr", tb).sort((x, y) => (key(x) > key(y) ? 1 : key(x) < key(y) ? -1 : 0) * dirSort);
+            dirSort *= -1; trs.forEach((tr) => tb.appendChild(tr));
+          }));
+        }
+        if (f.nota) { a.give("nota"); a.complete("nota", "Archivo sospechoso guardado en el inventario"); a.radio("Esa nota parece texto sin sentido… su autor presume de haberla «cifrado». Guárdala: te hará falta en la sala de servidores."); }
+      }
+      function driveD() {
+        mark("D");
+        path.textContent = "D:\\  (sin cifrar)";
+        view.innerHTML = Object.keys(fsD).map((n) => `<button type="button" class="ex-item" data-dir="${n}"><span class="ex-ico">📁</span>${n}</button>`).join("");
+        $$("[data-dir]", view).forEach((x) => (x.onclick = () => { Snd.click(); folder(x.dataset.dir); }));
+      }
+      function driveE() {
+        mark("E");
+        path.textContent = "E:\\";
+        view.innerHTML = `<div class="bitlocker"><div class="bl-ico">🔒</div><h3>Esta unidad está protegida por BitLocker</h3><p>Escribe la clave de recuperación de 48 dígitos para desbloquear la unidad.</p><input class="mono" placeholder="______-______-______-______-______-______-______-______" disabled><p class="small muted">El atacante no tiene la clave. Sin ella, el contenido es ruido aleatorio.</p></div>`;
+        a.radio("¿Ves la diferencia? E: está cifrada con BitLocker y es ilegible. D: no estaba cifrada: el atacante lo lee todo, aunque el portátil tuviera contraseña de Windows.");
+      }
+      $("[data-drive=D]", b).onclick = () => { Snd.click(); driveD(); };
+      $("[data-drive=E]", b).onclick = () => { Snd.bad(); driveE(); };
+    }, { icon: "🗂️", wide: true });
+  }
+
+  // Sala 3: candado de ruedas
+  function wheels(body, n, onTry) {
+    const vals = Array(n).fill(0);
+    const w = document.createElement("div"); w.className = "wheels";
+    w.innerHTML = vals.map((_, i) => `<div class="wheel-col"><button type="button" data-i="${i}" data-d="1" aria-label="Subir rueda ${i + 1}">▲</button><div class="wheel-num" data-n="${i}"><span class="prev">9</span><b>0</b><span class="next">1</span></div><button type="button" data-i="${i}" data-d="-1" aria-label="Bajar rueda ${i + 1}">▼</button></div>`).join("") + `<button type="button" class="btn big wheel-go">ABRIR</button>`;
+    body.appendChild(w);
+    const draw = () => vals.forEach((v, i) => { const el = $(`[data-n="${i}"]`, w); el.innerHTML = `<span class="prev">${(v + 9) % 10}</span><b>${v}</b><span class="next">${(v + 1) % 10}</span>`; });
+    $$("[data-d]", w).forEach((b) => (b.onclick = () => { const i = +b.dataset.i; vals[i] = (vals[i] + +b.dataset.d + 10) % 10; Snd.click(); const el = $(`[data-n="${i}"]`, w); el.classList.remove("spin"); void el.offsetWidth; el.classList.add("spin"); draw(); }));
+    $(".wheel-go", w).onclick = async () => { if (!(await onTry(vals.slice()))) { w.classList.add("err"); setTimeout(() => w.classList.remove("err"), 600); } else w.classList.add("solved"); };
+  }
+
+  // Sala 4: verificador
+  function openScanner(a) {
+    openWin("Verificador SHA-256", (b) => {
+      const scanned = () => a.get("scanned") || [];
+      b.innerHTML = `<div class="hashbox"><span>HUELLA DEL ORIGINAL FIRMADO</span><code>${D.contractOrigHash.toUpperCase()}</code></div>${cmd("Get-FileHash .\\contrato_*.txt -Algorithm SHA256 | Format-List Path, Hash")}<p class="q">1 · Coloca un contrato en la bandeja</p><div class="tray-docs">${D.contracts.map((c, i) => `<button type="button" class="doc-thumb" data-d="${i}"><span>📄</span>contrato_${i + 1}<em></em></button>`).join("")}</div><p class="q">2 · Declara su huella y escanea</p><div class="scan-screen"><div class="scan-line"></div><div class="scan-out">Bandeja vacía</div></div>`;
+      let sel = null;
+      const drawDocs = () => $$(".doc-thumb", b).forEach((d) => {
+        const i = +d.dataset.d; d.classList.toggle("selected", sel === i);
+        const st = scanned().includes(i) ? (i === D.authentic ? "AUTÉNTICO" : "EVIDENCIA") : "";
+        d.classList.toggle("is-auth", st === "AUTÉNTICO"); d.classList.toggle("is-evid", st === "EVIDENCIA"); $("em", d).textContent = st;
+      });
+      $$(".doc-thumb", b).forEach((d) => (d.onclick = () => { sel = +d.dataset.d; Snd.click(); $(".scan-out", b).textContent = `En bandeja: contrato_${sel + 1}.txt`; drawDocs(); }));
+      drawDocs();
+      answer(b, { label: "8 primeros caracteres del hash del contrato en bandeja", placeholder: "8 caracteres", btn: "ESCANEAR", check: async (v) => {
+        if (sel === null) { toast("Pon primero un contrato en la bandeja", "info"); return false; }
+        const c = D.contracts[sel];
+        if (hexIn(v).slice(0, 8) !== c.hash.slice(0, 8) || hexIn(v).length < 8) { a.fail("La huella declarada no es la de ese contrato"); return false; }
+        const scr = $(".scan-screen", b); scr.classList.add("scanning"); $(".scan-out", b).textContent = "Escaneando…";
+        await sleep(1300); scr.classList.remove("scanning");
+        const orig = D.contractOrigHash;
+        const cmp = [...c.hash.slice(0, 32)].map((ch, k) => `<i class="${ch === orig[k] ? "m" : "x"}">${ch}</i>`).join("");
+        const list = scanned(); if (!list.includes(sel)) { list.push(sel); a.set("scanned", list); }
+        if (sel === D.authentic) { scr.classList.add("match"); $(".scan-out", b).innerHTML = `<b>✓ COINCIDE CON EL ORIGINAL</b><div class="cmp">${cmp}…</div>`; a.complete("auth", `contrato_${sel + 1} es el auténtico`); }
+        else { scr.classList.add("nomatch"); Snd.bad(); $(".scan-out", b).innerHTML = `<b>✗ MANIPULADO · registrado como evidencia</b><div class="cmp">${cmp}…</div>`; toast("Evidencia registrada", "info"); }
+        setTimeout(() => scr.classList.remove("match", "nomatch"), 1800);
+        if (list.filter((i) => i !== D.authentic).length >= 3) a.complete("evid", "Las 3 manipulaciones están documentadas");
+        drawDocs(); $("input", b).value = "";
+        return true;
+      } });
+    }, { icon: "🔬", wide: true });
+  }
+
+  // Sala 5: comparación visual de hashes
+  async function diffViz(el, h1, h2) {
+    let same = 0;
+    el.innerHTML = `<div class="diff"><div class="diff-row"><span>1000</span><div class="d1"></div></div><div class="diff-row"><span>9000</span><div class="d2"></div></div><p class="diff-count"></p></div>`;
+    const d1 = $(".d1", el), d2 = $(".d2", el);
+    for (let i = 0; i < 64; i++) {
+      const m = h1[i] === h2[i]; if (m) same++;
+      d1.insertAdjacentHTML("beforeend", `<i class="${m ? "m" : ""}">${h1[i]}</i>`);
+      d2.insertAdjacentHTML("beforeend", `<i class="${m ? "m" : "x"}">${h2[i]}</i>`);
+      if (i % 4 === 0) { Snd.tone(400 + i * 12, 0.03, "square", 0.02); await sleep(25); }
+    }
+    $(".diff-count", el).innerHTML = `Solo coinciden <b>${same} de 64</b> posiciones (por puro azar se esperan unas 4). <b>Un carácter cambiado → hash completamente distinto.</b>`;
+  }
+
+  // Sala 7: dial de caja fuerte
+  function dial(body, onTry) {
+    let v = 0, last = null, seq = [], timer = null;
+    const w = document.createElement("div"); w.className = "dial-wrap";
+    const ticks = Array.from({ length: 40 }, (_, i) => { const ang = (i * 9 - 90) * Math.PI / 180, r1 = i % 5 ? 92 : 84; return `<path d="M${120 + r1 * Math.cos(ang)} ${120 + r1 * Math.sin(ang)}L${120 + 100 * Math.cos(ang)} ${120 + 100 * Math.sin(ang)}" stroke="${N}" stroke-width="${i % 5 ? 2 : 4}"/>${i % 5 ? "" : `<text x="${120 + 70 * Math.cos(ang)}" y="${125 + 70 * Math.sin(ang)}" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700" fill="${N}">${i}</text>`}`; }).join("");
+    w.innerHTML = `<div class="dial-box"><svg viewBox="0 0 240 240" class="dial-svg"><path d="M120 2l9 14h-18z" fill="${R}"/><g class="dial-rot"><circle cx="120" cy="120" r="104" fill="${LL}" stroke="${N}" stroke-width="5"/>${ticks}<circle cx="120" cy="120" r="26" fill="${L}" stroke="${N}" stroke-width="5"/></g></svg><div class="dial-num">00</div></div>
+      <div class="dial-ctrl"><button type="button" class="btn ghost" data-dir="I">⟲ Izquierda</button><button type="button" class="btn ghost" data-dir="D">Derecha ⟳</button></div>
+      <div class="dial-ctrl"><button type="button" class="btn" data-fix>Fijar número</button><button type="button" class="btn ghost" data-reset>Reiniciar</button></div><div class="dial-log"></div>`;
+    body.appendChild(w);
+    const draw = () => { $(".dial-rot", w).style.transform = `rotate(${-v * 9}deg)`; $(".dial-num", w).textContent = String(v).padStart(2, "0"); $(".dial-log", w).innerHTML = [0, 1, 2].map((i) => `<span class="${seq[i] ? "on" : ""}">${seq[i] ? `${seq[i].dir === "D" ? "Der." : "Izq."} ${seq[i].n}` : "—"}</span>`).join(""); };
+    const step = (dir) => { last = dir; v = (v + (dir === "D" ? 1 : -1) + 40) % 40; Snd.click(); draw(); };
+    $$("[data-dir]", w).forEach((b) => {
+      const start = (e) => { e.preventDefault(); step(b.dataset.dir); clearInterval(timer); let t = 0; timer = setInterval(() => { if (++t > 3) step(b.dataset.dir); }, 90); };
+      const stop = () => clearInterval(timer);
+      b.addEventListener("pointerdown", start); ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => b.addEventListener(ev, stop));
+      b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); step(b.dataset.dir); } });
+    });
+    $("[data-fix]", w).onclick = async () => {
+      if (!last) return toast("Gira el dial primero", "info");
+      seq.push({ dir: last, n: v }); last = null; Snd.tone(900, 0.08, "triangle", 0.1); draw();
+      if (seq.length === 3) { const ok = await onTry(seq); if (!ok) { w.classList.add("err"); setTimeout(() => w.classList.remove("err"), 600); seq = []; draw(); } else w.classList.add("solved"); }
+    };
+    $("[data-reset]", w).onclick = () => { seq = []; last = null; draw(); };
+    draw();
+  }
+
+  /* =============== ESTADO =============== */
   function load() { try { return JSON.parse(localStorage.getItem(STORE)); } catch (e) { return null; } }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }
   function clear() { try { localStorage.removeItem(STORE); } catch (e) {} }
   function newState(team) {
-    return {
-      v: 1, groupCode: CN.generateGroupCode(), team, currentStage: 0, score: C.START_SCORE,
-      hintsUsed: 0, hintsByStage: {}, errorsByStage: {}, totalErrors: 0,
-      completedStages: [], keywords: [], parts: {}, startTime: Date.now(), endTime: null, finished: false,
-    };
+    return { v: 2, groupCode: CN.generateGroupCode(), team, current: 0, score: C.START_SCORE, hintsUsed: 0, hintsByRoom: {}, errorsByRoom: {}, totalErrors: 0, completed: [], keywords: [], parts: {}, inv: [], rsa: null, startTime: Date.now(), endTime: null, finished: false, muted: false };
   }
-  const parts = (id) => (S.parts[id] = S.parts[id] || {});
 
-  /* ---------------- HUD ---------------- */
+  /* =============== HUD =============== */
   const topbar = document.getElementById("topbar");
   function addScore(delta) {
     S.score += delta;
-    const el = $("#hudScore");
-    el.textContent = S.score;
-    el.parentElement.classList.remove("bump-up", "bump-down");
-    void el.offsetWidth;
+    const el = $("#hudScore"); el.textContent = S.score;
+    el.parentElement.classList.remove("bump-up", "bump-down"); void el.offsetWidth;
     el.parentElement.classList.add(delta >= 0 ? "bump-up" : "bump-down");
   }
   function updateHUD() {
@@ -524,239 +728,205 @@
     $("#hudGroup").textContent = S.groupCode;
     $("#hudTeam").textContent = S.team;
     $("#hudScore").textContent = S.score;
-    const done = S.completedStages.length, total = STAGES.length;
-    const cur = Math.min(S.currentStage, total - 1);
-    $("#hudStage").textContent = S.finished ? "MISIÓN COMPLETADA" : `FASE ${cur + 1} DE ${total}`;
+    $("#muteBtn").textContent = S.muted ? "🔇" : "🔊";
+    const done = S.completed.length, total = ROOMS.length, cur = Math.min(S.current, total - 1);
+    $("#hudStage").textContent = S.finished ? "MISIÓN COMPLETADA" : `SALA ${cur + 1} DE ${total}`;
     $("#hudPct").textContent = Math.round((done / total) * 100) + "%";
     $("#progressFill").style.width = (done / total) * 100 + "%";
-    $("#stageMap").innerHTML = STAGES.map((st, i) => {
-      const cls = S.completedStages.includes(i) ? "done" : i === cur && !S.finished ? "current" : "";
-      return `<li class="${cls}" title="${st.title}"><span>${S.completedStages.includes(i) ? "✓" : i + 1}</span><em>${st.short}</em></li>`;
-    }).join("");
+    $("#stageMap").innerHTML = ROOMS.map((r, i) => `<li class="${S.completed.includes(i) ? "done" : i === cur && !S.finished ? "current" : ""}" title="${r.title}"><span>${S.completed.includes(i) ? "✓" : i + 1}</span><em>${r.short}</em></li>`).join("");
   }
   function tick() {
     if (!S) return;
-    const el = $("#hudTimer");
-    const end = S.endTime || Date.now();
-    const elapsed = (end - S.startTime) / 1000;
-    if (S.finished) { el.textContent = CN.fmtTime(elapsed); el.parentElement.classList.remove("over"); return; }
-    const remaining = C.DURATION_MIN * 60 - elapsed;
-    el.textContent = remaining >= 0 ? CN.fmtTime(remaining) : "+" + CN.fmtTime(-remaining);
-    el.parentElement.classList.toggle("over", remaining < 0);
-    el.parentElement.classList.toggle("low", remaining >= 0 && remaining < 600);
+    const el = $("#hudTimer"), elapsed = ((S.endTime || Date.now()) - S.startTime) / 1000;
+    if (S.finished) { el.textContent = CN.fmtTime(elapsed); return; }
+    const rem = C.DURATION_MIN * 60 - elapsed;
+    el.textContent = rem >= 0 ? CN.fmtTime(rem) : "+" + CN.fmtTime(-rem);
+    el.parentElement.classList.toggle("over", rem < 0);
+    el.parentElement.classList.toggle("low", rem >= 0 && rem < 600);
   }
   setInterval(tick, 1000);
+  $("#muteBtn").onclick = () => { if (!S) return; S.muted = !S.muted; save(); updateHUD(); };
 
-  /* ---------------- Motor de fases ---------------- */
-  function decorateSolved(art, value) {
-    art.classList.add("solved");
-    $(".step-status", art).textContent = "Resuelto ✓";
-    $$("input, select, button:not(.keep)", art).forEach((el) => (el.disabled = true));
-    $$("[data-ok]", art).forEach((el) => el.classList.add("correct"));
-    if (typeof value === "string") { const inp = $("form.answer:not(.two) input", art); if (inp && !inp.value) inp.value = value; }
+  /* =============== MOTOR DE SALAS =============== */
+  let radioTimer = null;
+  function radio(text) {
+    const el = $("#radioText"); if (!el) return;
+    clearInterval(radioTimer); el.textContent = ""; let i = 0;
+    $(".radio", app).classList.add("live"); Snd.radio();
+    radioTimer = setInterval(() => { el.textContent = text.slice(0, ++i); if (i >= text.length) { clearInterval(radioTimer); $(".radio", app)?.classList.remove("live"); } }, 18);
   }
-  function refreshLocks(stepsEl) {
-    let blocked = false;
-    $$(".step", stepsEl).forEach((art) => {
-      const locked = blocked && !art.classList.contains("solved");
-      art.classList.toggle("locked", locked);
-      art.inert = locked;
-      if (locked) $(".step-status", art).textContent = "Bloqueado";
-      else if (!art.classList.contains("solved")) $(".step-status", art).textContent = "En curso";
-      if (!art.classList.contains("solved")) blocked = true;
-    });
-  }
-  function makeApi(st, step, art, idx, steps) {
-    const ps = parts(st.id);
-    return {
-      solved: () => ps[step.key] !== undefined,
-      value: () => ps[step.key],
-      shuffle: (arr) => CN.rng(S.groupCode + "|" + st.id + "|" + step.key).shuffle(arr),
-      solve: (value = true) => {
-        if (ps[step.key] !== undefined) return;
-        ps[step.key] = value;
-        save();
-        decorateSolved(art, value);
-        toast("Correcto ✓", "ok");
-        refreshLocks(art.parentElement);
-        if (steps.every((s) => ps[s.key] !== undefined)) completeStage(st, idx);
-        else { const next = art.nextElementSibling; if (next) setTimeout(() => next.scrollIntoView({ behavior: "smooth", block: "start" }), 300); }
+  function makeApi(room, idx) {
+    const parts = (S.parts[room.id] = S.parts[room.id] || {});
+    const api = {
+      get: (k) => parts[k], set: (k, v) => { parts[k] = v; save(); },
+      done: (k) => !!parts["obj:" + k],
+      complete: (k, msg) => {
+        if (parts["obj:" + k]) return;
+        parts["obj:" + k] = true; save(); Snd.ok(); toast(msg || "Objetivo completado", "ok");
+        refreshRoom();
+        if (room.objectives.every((o) => parts["obj:" + o.key])) completeRoom(room, idx);
       },
-      wrong: (msg) => {
-        S.errorsByStage[st.id] = (S.errorsByStage[st.id] || 0) + 1;
-        S.totalErrors++;
-        addScore(-C.PENALTY_WRONG);
-        save();
-        toast(`${msg} · −${C.PENALTY_WRONG} puntos`, "bad");
+      fail: (msg) => {
+        S.errorsByRoom[room.id] = (S.errorsByRoom[room.id] || 0) + 1; S.totalErrors++;
+        addScore(-C.PENALTY_WRONG); save(); Snd.bad(); toast(`${msg} · −${C.PENALTY_WRONG}`, "bad");
+        document.body.classList.remove("alarm"); void document.body.offsetWidth; document.body.classList.add("alarm");
       },
+      give: (id) => { if (S.inv.includes(id)) return; S.inv.push(id); save(); renderInv(); Snd.item(); toast(`Nuevo objeto: ${ITEMS[id].name}`, "item"); const b = $(`[data-item="${id}"]`); b && b.classList.add("new"); },
+      radio,
+      shuffle: (arr) => CN.rng(S.groupCode + "|" + room.id).shuffle(arr),
     };
+    return api;
   }
-  function renderStage(idx) {
-    const st = STAGES[idx];
-    S.currentStage = idx;
-    save();
-    updateHUD();
-    app.innerHTML = `<section class="stage" data-stage="${st.id}">
-      <div class="stage-hero card">
-        <div class="hero-art">${ART[st.art]}</div>
-        <div class="hero-text"><span class="eyebrow">FASE ${idx + 1} DE ${STAGES.length}</span><h2>${st.title}</h2><p class="lead">${st.story(D)}</p></div>
+  function renderRoom(idx) {
+    const room = ROOMS[idx];
+    S.current = idx; save();
+    CUR = { room, idx, api: makeApi(room, idx), parts: S.parts[room.id] };
+    updateHUD(); renderInv();
+    app.innerHTML = `<section class="room enter">
+      <div class="room-head"><span class="eyebrow">SALA ${idx + 1} DE ${ROOMS.length}</span><h2>${room.title}</h2></div>
+      <div class="room-grid">
+        <div class="scene card"><div class="scene-inner">${SCENES[room.scene]()}<div class="hs-layer"></div></div><p class="scene-tip">Haz clic en los objetos marcados para investigar.</p></div>
+        <aside class="side">
+          <div class="card radio"><div class="radio-head"><span class="radio-led"></span>RADIO · JEFA DE SEGURIDAD</div><p id="radioText"></p></div>
+          <div class="card objectives"><h3>Objetivos</h3><ul></ul></div>
+          <div class="hint-zone"><button class="btn ghost hint-btn" type="button">💡 Pista <small>−${C.PENALTY_HINT}</small></button><div class="hints"></div></div>
+        </aside>
       </div>
-      <div class="hint-bar"><div class="hints" aria-live="polite"></div><button class="btn ghost hint-btn keep" type="button">💡 Pista <small>−${C.PENALTY_HINT}</small></button></div>
-      <div class="steps"></div>
-      <div class="stage-done" hidden></div>
     </section>`;
-    const stepsEl = $(".steps", app);
-    const steps = st.steps(D);
-    steps.forEach((step, i) => {
-      const art = document.createElement("article");
-      art.className = "step card";
-      art.innerHTML = `<header class="step-head"><span class="step-num">${i + 1}</span><h3>${step.title}</h3><span class="step-status">En curso</span></header><div class="step-body"></div>`;
-      stepsEl.appendChild(art);
-      const api = makeApi(st, step, art, idx, steps);
-      step.build($(".step-body", art), api);
-      if (api.solved()) decorateSolved(art, api.value());
-    });
-    refreshLocks(stepsEl);
-    renderHints(st);
-    $(".hint-btn", app).onclick = () => askHint(st);
-    if (S.completedStages.includes(idx)) showStageDone(st, idx, false);
+    $(".hint-btn", app).onclick = () => askHint(room);
+    refreshRoom(); renderHints(room);
+    radio(room.intro);
     window.scrollTo({ top: 0 });
+    if (S.completed.includes(idx)) showRoomDone(room, idx, false);
   }
-  function renderHints(st) {
-    const n = S.hintsByStage[st.id] || 0;
-    $(".hints", app).innerHTML = st.hints.slice(0, n).map((h, i) => `<div class="hint"><b>Pista ${i + 1}</b> ${h}</div>`).join("");
+  function refreshRoom() {
+    if (!CUR) return;
+    const { room, api } = CUR;
+    const layer = $(".hs-layer", app); if (!layer) return;
+    layer.innerHTML = room.hotspots.filter((h) => !h.show || h.show(api)).map((h) => `<button type="button" class="hs ${h.done && h.done(api) ? "done" : ""}" data-hs="${h.id}" style="left:${(h.x / 800) * 100}%;top:${(h.y / 420) * 100}%;width:${(h.w / 800) * 100}%;height:${(h.h / 420) * 100}%" aria-label="${h.label}"><span class="hs-label">${h.done && h.done(api) ? "✓ " : ""}${h.label}</span></button>`).join("");
+    $$(".hs", layer).forEach((b) => (b.onclick = () => { const h = room.hotspots.find((x) => x.id === b.dataset.hs); h.open(api); }));
+    $$("[data-when]", app).forEach((g) => (g.style.display = api.done(g.dataset.when) ? "" : "none"));
+    $$("[data-unless]", app).forEach((g) => (g.style.display = api.done(g.dataset.unless) ? "none" : ""));
+    $$("[data-anim]", app).forEach((g) => g.classList.toggle("run", api.done(g.dataset.anim)));
+    $(".objectives ul", app).innerHTML = room.objectives.map((o) => `<li class="${api.done(o.key) ? "ok" : ""}"><span class="obj-box">${api.done(o.key) ? "✓" : ""}</span>${o.label}</li>`).join("");
+  }
+  function renderHints(room) {
+    const n = S.hintsByRoom[room.id] || 0;
+    $(".hints", app).innerHTML = room.hints.slice(0, n).map((h, i) => `<div class="hint"><b>Pista ${i + 1}</b> ${h}</div>`).join("");
     const btn = $(".hint-btn", app);
-    if (n >= st.hints.length) { btn.disabled = true; btn.innerHTML = "Sin más pistas"; }
+    if (n >= room.hints.length) { btn.disabled = true; btn.textContent = "Sin más pistas"; }
   }
-  async function askHint(st) {
-    const n = S.hintsByStage[st.id] || 0;
-    if (n >= st.hints.length) return;
-    const ok = await modal({ title: "¿Usar una pista?", body: `<p>Te costará <b>${C.PENALTY_HINT} puntos</b>. Las pistas orientan, no dan la solución.</p><p class="small muted">Pistas restantes en esta fase: ${st.hints.length - n}</p>`, ok: "Ver pista", cancel: "Mejor no" });
-    if (!ok) return;
-    S.hintsByStage[st.id] = n + 1;
-    S.hintsUsed++;
-    addScore(-C.PENALTY_HINT);
-    save();
-    renderHints(st);
+  async function askHint(room) {
+    const n = S.hintsByRoom[room.id] || 0;
+    if (n >= room.hints.length) return;
+    if (!(await modal({ title: "¿Pedir una pista por radio?", body: `<p>Cuesta <b>${C.PENALTY_HINT} puntos</b>. Orienta, no da la solución.</p><p class="small muted">Quedan ${room.hints.length - n} en esta sala.</p>`, ok: "Pedir pista", cancel: "Mejor no" }))) return;
+    S.hintsByRoom[room.id] = n + 1; S.hintsUsed++; addScore(-C.PENALTY_HINT); save(); renderHints(room);
   }
-  function completeStage(st, idx) {
-    if (S.completedStages.includes(idx)) return;
-    S.completedStages.push(idx);
-    S.keywords.push(st.keyword);
+  function completeRoom(room, idx) {
+    if (S.completed.includes(idx)) return;
+    S.completed.push(idx); S.keywords.push(room.keyword);
     let bonus = false;
-    if (!S.errorsByStage[st.id]) { addScore(C.BONUS_CLEAN); bonus = true; }
-    save();
-    updateHUD();
-    showStageDone(st, idx, true, bonus);
+    if (!S.errorsByRoom[room.id]) { addScore(C.BONUS_CLEAN); bonus = true; }
+    save(); updateHUD();
+    setTimeout(() => showRoomDone(room, idx, true, bonus), 1100);
   }
-  function showStageDone(st, idx, animate, bonus = false) {
-    const box = $(".stage-done", app);
-    const last = idx === STAGES.length - 1;
-    box.hidden = false;
-    box.className = "stage-done card" + (animate ? " pop" : "");
-    box.innerHTML = `<div class="done-badge">✓ FASE SUPERADA</div><p>${st.feedback}</p>${bonus ? `<p class="bonus">+${C.BONUS_CLEAN} puntos · fase sin errores</p>` : ""}<div class="keyword"><span>PALABRA RECUPERADA</span><strong>${st.keyword}</strong></div><button class="btn big keep" type="button">${last ? "ABRIR EL SISTEMA 🔓" : "CONTINUAR →"}</button>`;
-    $(".hint-btn", app).disabled = true;
-    $("button", box).onclick = () => (last ? finishGame() : renderStage(idx + 1));
-    if (animate) setTimeout(() => box.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
+  function showRoomDone(room, idx, animate, bonus = false) {
+    if (WIN) WIN.close(true);
+    const last = idx === ROOMS.length - 1;
+    const ov = document.createElement("div");
+    ov.className = "done-ov";
+    ov.innerHTML = `<div class="done-card card ${animate ? "pop" : ""}"><div class="done-badge">✓ SALA ${idx + 1} SUPERADA</div><h2>${room.title}</h2><p>${room.lesson}</p>${bonus ? `<p class="bonus">+${C.BONUS_CLEAN} puntos · sala sin errores</p>` : ""}<div class="keyword"><span>PALABRA RECUPERADA</span><strong>${room.keyword}</strong></div><button class="btn big" type="button">${last ? "SALIR DEL EDIFICIO 🔓" : "SIGUIENTE SALA →"}</button></div>`;
+    document.body.appendChild(ov);
+    if (animate) confetti(30);
+    $("button", ov).focus();
+    $("button", ov).onclick = () => { ov.remove(); last ? finishGame() : transition(() => renderRoom(idx + 1)); };
+  }
+  function transition(fn) {
+    const t = document.createElement("div"); t.className = "wipe"; document.body.appendChild(t);
+    Snd.door(); setTimeout(fn, 450); setTimeout(() => t.remove(), 1000);
   }
 
-  /* ---------------- Pantallas ---------------- */
+  /* =============== PANTALLAS =============== */
   function renderIntro() {
-    topbar.hidden = true;
+    topbar.hidden = true; $("#inv").hidden = true;
     app.innerHTML = `<section class="intro">
       <div class="intro-card card">
-        <div class="intro-art">${ART.box}</div>
-        <span class="eyebrow">SEGURIDAD INFORMÁTICA · UD2</span>
+        <span class="eyebrow">SEGURIDAD INFORMÁTICA · UD2 · ESCAPE ROOM</span>
         <h1>OPERACIÓN<br><span class="hl">CAJA NEGRA</span></h1>
-        <p class="lead">La empresa <b>CITED Data</b> ha sufrido un incidente de seguridad. Se ha encontrado un dispositivo con información confidencial y hay indicios de que algunos archivos han sido manipulados.</p>
+        <p class="lead">La empresa <b>CITED Data</b> ha sufrido un incidente. Un SSD con información confidencial ha acabado en manos de un atacante y varios archivos han sido manipulados. Vuestro equipo está <b>encerrado en el edificio</b> hasta que lo arregle todo.</p>
+        <div class="rooms-preview">${ROOMS.map((r, i) => `<div><span>${i + 1}</span>${r.short}</div>`).join("")}</div>
         <div class="mission">
-          <div><b>Tu equipo deberá</b><ul><li>identificar los riesgos</li><li>recuperar información</li><li>comprobar la integridad de archivos</li><li>proteger los datos</li></ul></div>
-          <div><b>Vais a necesitar</b><ul><li>PowerShell</li><li>CyberChef (navegador)</li><li>7-Zip</li><li>otro grupo con el que colaborar</li></ul></div>
+          <div><b>Cada sala es distinta</b><ul><li>investiga los objetos</li><li>usa herramientas reales</li><li>recoge objetos para salas posteriores</li><li>escucha la radio</li></ul></div>
+          <div><b>Necesitaréis</b><ul><li>PowerShell</li><li>CyberChef (navegador)</li><li>7-Zip</li><li>otro equipo aliado (sala 8)</li></ul></div>
         </div>
-        <div class="rules">
-          <span>⏱ Gana el equipo que termine antes</span><span>🎯 Empezáis con ${C.START_SCORE} puntos</span><span>✗ Error −${C.PENALTY_WRONG}</span><span>💡 Pista −${C.PENALTY_HINT}</span><span>★ Fase limpia +${C.BONUS_CLEAN}</span>
-        </div>
-        <p class="small muted">Cada equipo recibe un código y <b>datos distintos</b>: copiar la respuesta de otro equipo, o pedírsela a una IA, no sirve. Hay que calcular de verdad.</p>
-        <form class="start" id="startForm"><label><span>Nombre del equipo</span><input id="teamName" maxlength="30" required autocomplete="off" placeholder="p. ej. Los Hashers"></label><button class="btn big" type="submit">INICIAR MISIÓN</button></form>
-      </div>
-    </section>`;
+        <div class="rules"><span>⏱ Gana quien escape antes</span><span>🎯 ${C.START_SCORE} puntos</span><span>✗ Error −${C.PENALTY_WRONG}</span><span>💡 Pista −${C.PENALTY_HINT}</span><span>★ Sala limpia +${C.BONUS_CLEAN}</span></div>
+        <p class="small muted">Cada equipo recibe datos distintos. Copiar a otro equipo o preguntarle a una IA no sirve: hay que calcularlo de verdad. Activad el sonido 🔊.</p>
+        <form class="start" id="startForm"><label><span>Nombre del equipo</span><input id="teamName" maxlength="30" required autocomplete="off" placeholder="p. ej. Los Hashers"></label><button class="btn big" type="submit">ENTRAR EN EL EDIFICIO</button></form>
+      </div></section>`;
     $("#startForm").onsubmit = async (e) => {
       e.preventDefault();
-      const team = $("#teamName").value.trim();
-      if (!team) return $("#teamName").focus();
-      S = newState(team);
-      save();
+      const team = $("#teamName").value.trim(); if (!team) return $("#teamName").focus();
+      S = newState(team); save();
       await boot();
-      await modal({ title: `Vuestro código de grupo: ${S.groupCode}`, body: `<p>Aparecerá siempre arriba. Vuestros archivos y respuestas dependen de él.</p><p class="small muted">Si reiniciáis la misión se generará un código nuevo y el tiempo volverá a empezar.</p>`, ok: "¡Vamos!" });
+      await modal({ title: `Código de equipo: ${S.groupCode}`, body: `<p>Aparece siempre arriba. Vuestros archivos y soluciones dependen de él.</p><p class="small muted">Si reiniciáis, se genera otro código y el tiempo vuelve a cero.</p>`, ok: "¡Adelante!" });
     };
   }
   function renderResume(saved) {
-    topbar.hidden = true;
-    const stage = STAGES[Math.min(saved.currentStage, STAGES.length - 1)];
+    topbar.hidden = true; $("#inv").hidden = true;
+    const room = ROOMS[Math.min(saved.current, ROOMS.length - 1)];
     app.innerHTML = `<section class="intro"><div class="intro-card card narrow">
-      <div class="intro-art small">${ART.box}</div>
       <h2>¿QUIERES CONTINUAR LA MISIÓN?</h2>
-      <div class="resume-grid"><div><span>EQUIPO</span><b>${esc(saved.team)}</b></div><div><span>GRUPO</span><b>${saved.groupCode}</b></div><div><span>PUNTOS</span><b>${saved.score}</b></div><div><span>${saved.finished ? "ESTADO" : "FASE"}</span><b>${saved.finished ? "Completada" : stage.title}</b></div></div>
-      <div class="row-actions"><button class="btn big" id="cont">CONTINUAR</button><button class="btn ghost big" id="reset">REINICIAR</button></div>
-    </div></section>`;
+      <div class="resume-grid"><div><span>EQUIPO</span><b>${esc(saved.team)}</b></div><div><span>CÓDIGO</span><b>${saved.groupCode}</b></div><div><span>PUNTOS</span><b>${saved.score}</b></div><div><span>${saved.finished ? "ESTADO" : "SALA"}</span><b>${saved.finished ? "Completada" : room.title}</b></div></div>
+      <div class="row-actions"><button class="btn big" id="cont">CONTINUAR</button><button class="btn ghost big" id="reset">REINICIAR</button></div></div></section>`;
     $("#cont").onclick = () => { S = saved; boot(); };
     $("#reset").onclick = async () => {
-      if (await modal({ title: "¿Reiniciar la misión?", body: "<p>Se perderá todo el progreso, se generará un <b>código de grupo nuevo</b> (con datos nuevos) y el cronómetro volverá a cero.</p>", ok: "Sí, reiniciar", cancel: "Cancelar" })) { clear(); S = null; renderIntro(); }
+      if (await modal({ title: "¿Reiniciar la misión?", body: "<p>Se pierde todo el progreso, se genera un <b>código nuevo</b> (datos nuevos) y el cronómetro vuelve a cero.</p>", ok: "Sí, reiniciar", cancel: "Cancelar" })) { clear(); S = null; renderIntro(); }
     };
   }
   async function boot() {
-    app.innerHTML = `<div class="loading">Preparando la misión…</div>`;
+    app.innerHTML = `<div class="loading"><div class="spinner"></div>Generando claves y evidencias de vuestro equipo…</div>`;
     D = await CN.deriveGroup(S.groupCode);
+    if (!S.rsa) { S.rsa = await CN.makeRSA(D.letter); save(); }
     updateHUD(); tick();
     if (S.finished) return renderFinal();
-    renderStage(Math.min(S.currentStage, STAGES.length - 1));
+    renderRoom(Math.min(S.current, ROOMS.length - 1));
   }
-  async function finishGame() {
+  function finishGame() {
     if (!S.finished) { S.finished = true; S.endTime = Date.now(); save(); }
-    renderFinal();
+    transition(renderFinal);
   }
   async function renderFinal() {
-    updateHUD(); tick();
+    CUR = null; updateHUD(); tick(); $("#inv").hidden = true;
     const elapsed = Math.round((S.endTime - S.startTime) / 1000);
     const code = await CN.makeFinishCode({ group: S.groupCode, team: S.team, elapsed, score: S.score, hints: S.hintsUsed, errors: S.totalErrors, end: S.endTime });
     app.innerHTML = `<section class="final">
-      <div class="vault" aria-hidden="true"><div class="vault-body"><div class="vault-inside">${STAGES.map((s) => `<span>${s.keyword}</span>`).join("")}</div><div class="vault-door"><div class="dial"></div></div></div></div>
+      <div class="vault" aria-hidden="true"><div class="vault-body"><div class="vault-inside">${S.keywords.map((k) => `<span>${k}</span>`).join("")}</div><div class="vault-door"><div class="dial"></div></div></div></div>
       <div class="card final-card">
         <span class="eyebrow">MISIÓN COMPLETADA</span>
         <h1>SISTEMA <span class="hl">RECUPERADO</span></h1>
         <div class="stats"><div><span>TIEMPO</span><b>${CN.fmtTime(elapsed)}</b></div><div><span>PUNTOS</span><b>${S.score}</b></div><div><span>PISTAS</span><b>${S.hintsUsed}</b></div><div><span>ERRORES</span><b>${S.totalErrors}</b></div></div>
-        <div class="achieved"><b>Habéis conseguido:</b><ul>
-          <li>identificar un almacenamiento sin protección</li><li>distinguir codificar de cifrar</li><li>usar claves públicas y privadas</li><li>comprobar la integridad de archivos y copias con SHA-256</li><li>descifrar con AES-256 (simétrico)</li><li>proteger información con 7-Zip</li></ul></div>
+        <div class="achieved"><b>Habéis conseguido:</b><ul><li>demostrar que una contraseña de Windows no cifra un disco</li><li>leer una nota «cifrada» que solo estaba codificada</li><li>descifrar con RSA usando la clave privada correcta</li><li>detectar manipulaciones invisibles con SHA-256</li><li>sellar una transferencia probando miles de hashes</li><li>verificar copias y diseñar un plan 3-2-1</li><li>descifrar AES-256 y abrir una caja fuerte</li><li>proteger y compartir datos con 7-Zip</li></ul></div>
         <div class="kw-list">${S.keywords.map((k) => `<span>${k}</span>`).join("")}</div>
-        <div class="summary"><div><b>Confidencialidad</b> → cifrado</div><div><b>Integridad</b> → hash</div><div><b>Autoría</b> → firma (clave privada)</div><div><b>Acceso al contenido cifrado</b> → clave</div></div>
+        <div class="summary"><div><b>Confidencialidad</b> → cifrado</div><div><b>Integridad</b> → hash</div><div><b>Disponibilidad</b> → copias</div><div><b>Autenticidad</b> → firma</div></div>
         <div class="finish-code"><span>CÓDIGO DE FINALIZACIÓN · entrégalo al profesor para el ranking</span>${cmd(code, "Equipo " + esc(S.team) + " · " + S.groupCode)}</div>
-        <button class="btn big keep" id="finBtn" type="button">FINALIZAR MISIÓN</button>
-      </div>
-    </section>`;
-    confetti();
-    $("#finBtn").onclick = () => { confetti(); modal({ title: "¡Buen trabajo, equipo!", body: `<p>Tiempo final: <b>${CN.fmtTime(elapsed)}</b> · ${S.score} puntos.</p><p>Copiad el código de finalización y entregádselo al profesor.</p>`, ok: "Hecho" }); };
+        <button class="btn big" id="finBtn" type="button">FINALIZAR MISIÓN</button>
+      </div></section>`;
+    confetti(80); Snd.door();
+    $("#finBtn").onclick = () => { confetti(80); modal({ title: "¡Habéis escapado!", body: `<p>Tiempo: <b>${CN.fmtTime(elapsed)}</b> · ${S.score} puntos.</p><p>Copiad el código de finalización y entregádselo al profesor.</p>`, ok: "Hecho" }); };
   }
-  function confetti() {
-    const wrap = document.createElement("div");
-    wrap.className = "confetti";
-    for (let i = 0; i < 70; i++) {
+  function confetti(n) {
+    const wrap = document.createElement("div"); wrap.className = "confetti";
+    for (let i = 0; i < n; i++) {
       const p = document.createElement("i");
-      p.style.left = Math.random() * 100 + "vw";
-      p.style.background = [L, N, LL, "#fff"][i % 4];
-      p.style.animationDelay = Math.random() * 0.8 + "s";
-      p.style.animationDuration = 2 + Math.random() * 1.5 + "s";
-      p.style.transform = `rotate(${Math.random() * 360}deg)`;
+      p.style.left = Math.random() * 100 + "vw"; p.style.background = [L, N, LL, W][i % 4];
+      p.style.animationDelay = Math.random() * 0.8 + "s"; p.style.animationDuration = 2 + Math.random() * 1.5 + "s";
       wrap.appendChild(p);
     }
-    document.body.appendChild(wrap);
-    setTimeout(() => wrap.remove(), 4500);
+    document.body.appendChild(wrap); setTimeout(() => wrap.remove(), 4500);
   }
 
-  /* ---------------- Arranque ---------------- */
-  if (!window.crypto || !crypto.subtle) {
-    app.innerHTML = `<div class="card narrow pad"><h2>Navegador no compatible</h2><p>Abre la web desde https:// (por ejemplo GitHub Pages) o desde localhost.</p></div>`;
-    return;
-  }
+  /* =============== ARRANQUE =============== */
+  if (!window.crypto || !crypto.subtle) { app.innerHTML = `<div class="card intro-card narrow"><h2>Navegador no compatible</h2><p>Abre la web desde https:// (GitHub Pages) o desde localhost.</p></div>`; return; }
   const saved = load();
   if (saved && saved.groupCode) renderResume(saved); else renderIntro();
 })();
