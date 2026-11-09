@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Operación Caja Negra</title>
+  <meta name="description" content="Escape room de criptografía · Seguridad Informática 2º SMR · UD2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar" id="topbar" hidden>
+    <div class="topbar-row">
+      <div class="brand">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 13 L20 6 L34 13 V28 L20 35 L6 28 Z" fill="#101C3A" stroke="#101C3A" stroke-width="3" stroke-linejoin="round"/><path d="M6 13 L20 20 L34 13 M20 20 V35" stroke="#fff" stroke-width="2.5" fill="none"/><circle cx="27" cy="24" r="3" fill="#A9DB2E"/></svg>
+        <span>OPERACIÓN <b>CAJA NEGRA</b></span>
+      </div>
+      <div class="hud">
+        <div class="hud-item team"><span class="hud-label">EQUIPO</span><span class="hud-value" id="hudTeam">—</span></div>
+        <div class="hud-item"><span class="hud-label">GRUPO</span><span class="hud-value mono" id="hudGroup">----</span></div>
+        <div class="hud-item"><span class="hud-label">PUNTOS</span><span class="hud-value" id="hudScore">1000</span></div>
+        <div class="hud-item timer"><span class="hud-label">TIEMPO</span><span class="hud-value mono" id="hudTimer">--:--</span></div>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta"><span id="hudStage">FASE 1</span><span id="hudPct">0%</span></div>
+      <div class="progress" role="progressbar" aria-label="Progreso de la misión"><div class="progress-fill" id="progressFill"></div></div>
+      <ol class="stage-map" id="stageMap"></ol>
+    </div>
+  </header>
+
+  <main id="app"></main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="modal" class="modal" hidden></div>
+
+  <script src="js/core.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
