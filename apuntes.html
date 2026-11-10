@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apuntes de criptografía · UD2</title>
+  <meta name="description" content="Apuntes de criptografía aplicada al almacenamiento · Seguridad Informática · 2º SMR · UD2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #101C3A; --navy-2: #2A3658; --lime: #A9DB2E; --lime-light: #EAF8C9;
+      --bg: #F7F8FA; --gray: #E4E8ED; --gray-2: #6B7488; --danger: #D94444; --danger-light: #FBE3E3;
+      --amber-light: #FFF6D8; --white: #fff;
+      --font: "Manrope", "Segoe UI", system-ui, sans-serif; --mono: "JetBrains Mono", Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 20px; }
+    body { margin: 0; font: 16px/1.65 var(--font); color: var(--navy); background: var(--bg);
+      background-image: radial-gradient(var(--gray) 1.2px, transparent 1.2px); background-size: 22px 22px; }
+    a { color: var(--navy); font-weight: 700; text-decoration-color: var(--lime); text-decoration-thickness: 3px; }
+    code { font-family: var(--mono); font-size: .88em; background: var(--lime-light); border: 1.5px solid var(--navy); border-radius: 6px; padding: 0 5px; word-break: break-word; }
+    h1, h2, h3 { line-height: 1.15; letter-spacing: -.01em; }
+    :focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+
+    /* portada */
+    .cover { background: var(--navy); color: var(--white); border-bottom: 6px solid var(--lime); }
+    .cover-in { max-width: 1180px; margin: 0 auto; padding: 34px 24px 30px; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
+    .cover .tag { display: inline-block; background: var(--lime); color: var(--navy); font-weight: 800; font-size: .74rem; letter-spacing: .14em; padding: 4px 12px; border-radius: 999px; }
+    .cover h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 12px 0 6px; font-weight: 800; }
+    .cover h1 span { color: var(--lime); }
+    .cover p { margin: 0; opacity: .85; font-weight: 600; }
+    .cover svg { width: 150px; height: auto; }
+    .cover .meta { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .cover .meta span { border: 2px solid rgba(255,255,255,.5); border-radius: 999px; padding: 2px 12px; font-size: .82rem; font-weight: 700; }
+
+    /* layout */
+    .layout { max-width: 1180px; margin: 0 auto; padding: 26px 24px 80px; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; align-items: start; }
+    .toc { position: sticky; top: 16px; background: var(--white); border: 3px solid var(--navy); border-radius: 18px; box-shadow: 4px 4px 0 var(--navy); padding: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+    .toc b { display: block; font-size: .72rem; letter-spacing: .14em; margin-bottom: 8px; }
+    .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+    .toc li { counter-increment: t; }
+    .toc a { display: flex; gap: 8px; padding: 5px 8px; border-radius: 10px; text-decoration: none; font-size: .9rem; font-weight: 700; }
+    .toc a::before { content: counter(t); flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--navy); color: var(--lime); display: grid; place-items: center; font-size: .72rem; }
+    .toc a:hover, .toc a.on { background: var(--lime-light); }
+    .toc .actions { margin-top: 14px; display: grid; gap: 8px; }
+    .btn { font: inherit; font-weight: 800; cursor: pointer; background: var(--lime); color: var(--navy); border: 3px solid var(--navy); border-radius: 999px; padding: 8px 16px; box-shadow: 3px 3px 0 var(--navy); text-align: center; text-decoration: none; font-size: .9rem; }
+    .btn.ghost { background: var(--white); }
+    .btn:active { transform: translate(3px,3px); box-shadow: none; }
+
+    /* secciones */
+    main { min-width: 0; }
+    section.unit { background: var(--white); border: 3px solid var(--navy); border-radius: 22px; box-shadow: 6px 6px 0 var(--navy); padding: 28px 32px; margin-bottom: 28px; }
+    .unit-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+    .num { width: 46px; height: 46px; flex-shrink: 0; border-radius: 14px; background: var(--navy); color: var(--lime); display: grid; place-items: center; font-weight: 800; font-size: 1.3rem; }
+    .unit h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); margin: 0; font-weight: 800; text-transform: uppercase; }
+    .rooms { margin: 0 0 16px 60px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .rooms span { font-size: .72rem; font-weight: 800; letter-spacing: .06em; border: 2px solid var(--navy); border-radius: 999px; padding: 1px 10px; background: var(--lime-light); }
+    .unit h3 { font-size: 1.15rem; margin: 26px 0 8px; display: flex; align-items: center; gap: 8px; }
+    .unit h3::before { content: ""; width: 12px; height: 12px; background: var(--lime); border: 2.5px solid var(--navy); border-radius: 4px; }
+    .lead { font-size: 1.08rem; }
+
+    .def { border: 3px solid var(--navy); border-radius: 16px; padding: 14px 18px; background: var(--lime-light); margin: 14px 0; font-size: 1.05rem; }
+    .def b:first-child { display: block; font-size: .72rem; letter-spacing: .14em; margin-bottom: 2px; }
+    .box { border-radius: 14px; padding: 12px 16px; margin: 14px 0; border: 2.5px solid var(--navy); }
+    .box.tip { background: var(--amber-light); border-style: dashed; }
+    .box.warn { background: var(--danger-light); border-color: var(--danger); }
+    .box.case { background: var(--bg); }
+    .box > b:first-child { display: inline-block; background: var(--navy); color: var(--white); border-radius: 6px; padding: 0 8px; font-size: .74rem; letter-spacing: .1em; margin-bottom: 4px; }
+    .box.warn > b:first-child { background: var(--danger); }
+    .box p { margin: 4px 0; }
+
+    table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 14px 0; border: 2.5px solid var(--navy); border-radius: 14px; overflow: hidden; font-size: .95rem; }
+    th { background: var(--navy); color: var(--white); text-align: left; padding: 8px 12px; font-size: .82rem; letter-spacing: .04em; }
+    td { padding: 8px 12px; border-top: 1.5px solid var(--gray); vertical-align: top; }
+    tr:nth-child(even) td { background: var(--bg); }
+    .tbl-wrap { overflow-x: auto; }
+
+    .cmd { border: 3px solid var(--navy); border-radius: 14px; overflow: hidden; margin: 10px 0 16px; background: #F2F5F9; }
+    .cmd-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 4px 14px; background: var(--navy); color: var(--white); font-size: .72rem; font-weight: 800; letter-spacing: .1em; }
+    .copy { font: inherit; font-size: .72rem; cursor: pointer; background: var(--lime); color: var(--navy); border: 2px solid var(--white); border-radius: 999px; padding: 2px 10px; font-weight: 800; }
+    .cmd pre { margin: 0; padding: 12px 14px; font: .88rem/1.5 var(--mono); white-space: pre-wrap; word-break: break-all; }
+    .hash { font-family: var(--mono); font-size: .86rem; word-break: break-all; background: #0B1430; color: var(--white); border-radius: 10px; padding: 8px 12px; margin: 4px 0 10px; border: 2.5px solid var(--navy); }
+    .hash b { color: var(--lime); font-weight: 700; }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+    .card { border: 2.5px solid var(--navy); border-radius: 16px; padding: 14px 16px; background: var(--white); box-shadow: 3px 3px 0 var(--navy); }
+    .card h4 { margin: 0 0 6px; font-size: 1rem; }
+    .card.dark { background: var(--navy); color: var(--white); }
+    .card.dark h4 { color: var(--lime); }
+    .card p { margin: 4px 0; }
+
+    .steps { counter-reset: s; list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 8px; }
+    .steps li { counter-increment: s; display: flex; gap: 12px; align-items: flex-start; }
+    .steps li::before { content: counter(s); flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--lime); border: 2.5px solid var(--navy); display: grid; place-items: center; font-weight: 800; font-size: .85rem; }
+
+    .keys { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 14px 0; }
+    .key { border: 3px solid var(--navy); border-radius: 16px; padding: 14px; display: flex; gap: 12px; align-items: center; }
+    .key.pub { background: var(--white); } .key.priv { background: var(--navy); color: var(--white); }
+    .key .ico { font-size: 2rem; }
+    .key b { display: block; }
+
+    .quiz details { border: 2.5px solid var(--navy); border-radius: 12px; padding: 10px 14px; margin: 8px 0; background: var(--bg); }
+    .quiz summary { cursor: pointer; font-weight: 700; }
+    .quiz details[open] summary { margin-bottom: 6px; }
+
+    .glossary dt { font-weight: 800; margin-top: 10px; }
+    .glossary dd { margin: 2px 0 0 0; padding-left: 14px; border-left: 4px solid var(--lime); }
+
+    footer { text-align: center; font-size: .85rem; color: var(--gray-2); padding: 0 24px 40px; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; max-height: none; }
+      .cover-in { grid-template-columns: 1fr; } .cover svg { display: none; }
+    }
+    @media (max-width: 640px) {
+      .layout { padding: 16px 16px 60px; }
+      section.unit { padding: 20px 16px; }
+      .grid2, .keys { grid-template-columns: 1fr; }
+      .rooms { margin-left: 0; }
+    }
+    @media print {
+      body { background: #fff; font-size: 11pt; }
+      .toc, .copy, footer .btn { display: none !important; }
+      .layout { display: block; padding: 0; max-width: none; }
+      section.unit { box-shadow: none; border-width: 2px; break-inside: auto; page-break-before: always; padding: 16px 20px; }
+      section.unit:first-of-type { page-break-before: auto; }
+      .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      th, .num, .hash, .card.dark, .key.priv, .def, .box, .rooms span, code { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .quiz details { display: block; } .quiz details > *:not(summary) { display: block; }
+      table, .box, .def, .card, .cmd { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="cover">
+    <div class="cover-in">
+      <div>
+        <span class="tag">UD2 · ALMACENAMIENTO SEGURO Y COPIAS DE SEGURIDAD</span>
+        <h1>Criptografía <span>aplicada</span></h1>
+        <p>Apuntes de consulta · Seguridad Informática · 2º SMR</p>
+        <div class="meta"><span>CITED</span><span>Sistemas Microinformáticos y Redes</span><span>Curso 2026/2027</span><span>Alonso Guillén</span></div>
+      </div>
+      <svg viewBox="0 0 200 150" aria-hidden="true"><g fill="none" stroke="#A9DB2E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="40" y="62" width="120" height="76" rx="14" fill="#2A3658"/><path d="M68 62V44a32 32 0 0 1 64 0v18"/><circle cx="100" cy="94" r="10" fill="#A9DB2E"/><path d="M100 104v16"/></g></svg>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Índice">
+      <b>ÍNDICE</b>
+      <ol>
+        <li><a href="#repaso">Repaso: cifrar</a></li>
+        <li><a href="#codificar">Codificar no es cifrar</a></li>
+        <li><a href="#reposo">Datos en reposo</a></li>
+        <li><a href="#aes">AES en la práctica</a></li>
+        <li><a href="#asimetrico">Asimétrico en la práctica</a></li>
+        <li><a href="#hash">Hash e integridad</a></li>
+        <li><a href="#calcular">Calcular hashes</a></li>
+        <li><a href="#copias">Verificar copias</a></li>
+        <li><a href="#7zip">Proteger con 7-Zip</a></li>
+        <li><a href="#principios">Principios de seguridad</a></li>
+        <li><a href="#herramientas">Caja de herramientas</a></li>
+        <li><a href="#glosario">Glosario</a></li>
+      </ol>
+      <div class="actions"><button class="btn" type="button" onclick="window.print()">🖨️ Imprimir / PDF</button><a class="btn ghost" href="./">🔐 Ir al escape room</a></div>
+    </nav>
+
+    <main>
+      <!-- 1 -->
+      <section class="unit" id="repaso">
+        <div class="unit-head"><span class="num">1</span><h2>Repaso: ¿qué es cifrar?</h2></div>
+        <p class="lead">El <b>cifrado</b> transforma información legible en información que no se puede interpretar sin disponer de la <b>clave</b>.</p>
+        <div class="tbl-wrap"><table>
+          <tr><th>Concepto</th><th>Significado</th><th>Ejemplo</th></tr>
+          <tr><td><b>Texto en claro</b></td><td>La información original</td><td><code>Transferencia: 1000 EUR</code></td></tr>
+          <tr><td><b>Algoritmo</b></td><td>El procedimiento que se aplica</td><td>AES, RSA</td></tr>
+          <tr><td><b>Clave</b></td><td>El valor secreto que controla el algoritmo</td><td><code>000102…0e0f</code></td></tr>
+          <tr><td><b>Texto cifrado</b></td><td>El resultado ilegible</td><td><code>1ef9a0d5da3e…</code></td></tr>
+        </table></div>
+        <div class="grid2">
+          <div class="card"><h4>🔑 Simétrico</h4><p>La <b>misma clave</b> cifra y descifra.</p><p>✔ Muy rápido · ✘ Hay que hacer llegar la clave al otro de forma segura.</p><p>Ejemplo: <b>AES</b>.</p></div>
+          <div class="card dark"><h4>🗝️🔑 Asimétrico</h4><p>Cada persona tiene un <b>par de claves</b>: pública y privada.</p><p>✔ No hay que compartir ningún secreto · ✘ Más lento.</p><p>Ejemplo: <b>RSA</b>.</p></div>
+        </div>
+        <div class="box tip"><b>RECUERDA</b><p>La seguridad no depende de que el algoritmo sea secreto (AES y RSA son públicos), sino de que la <b>clave</b> lo sea.</p></div>
+      </section>
+
+      <!-- 2 -->
+      <section class="unit" id="codificar">
+        <div class="unit-head"><span class="num">2</span><h2>Codificar no es cifrar</h2></div>
+        <div class="rooms"><span>SALA 2 · SERVIDORES</span></div>
+        <p class="lead">Mucha gente dice que algo está «cifrado en Base64». Está mal dicho: <b>Base64 no protege nada</b>.</p>
+        <div class="tbl-wrap"><table>
+          <tr><th></th><th>Codificar</th><th>Cifrar</th></tr>
+          <tr><td><b>Objetivo</b></td><td>Representar los datos en otro formato</td><td>Que solo lo lea quien tenga la clave</td></tr>
+          <tr><td><b>¿Necesita clave?</b></td><td>No</td><td>Sí</td></tr>
+          <tr><td><b>¿Cualquiera puede revertirlo?</b></td><td>Sí</td><td>No</td></tr>
+          <tr><td><b>Ejemplos</b></td><td>Base64, hexadecimal, ASCII</td><td>AES, RSA</td></tr>
+        </table></div>
+        <h3>Base64</h3>
+        <p>Convierte cualquier dato (también binario: imágenes, claves…) en texto «imprimible» usando 64 símbolos: <code>A–Z</code> <code>a–z</code> <code>0–9</code> <code>+</code> <code>/</code>. Si al final sobran huecos, se rellena con <code>=</code>.</p>
+        <div class="hash"><b>Hola 2SMR</b> → SG9sYSAyU01S<br><b>CITED</b> → Q0lURUQ=</div>
+        <p>Se usa para enviar binario como texto: adjuntos de correo, certificados, claves <code>.pem</code>…</p>
+        <div class="box tip"><b>CÓMO RECONOCERLO</b><p>Solo letras, números, <code>+</code> y <code>/</code>; longitud múltiplo de 4; muchas veces termina en <code>=</code> o <code>==</code>.</p></div>
+        <h3>Descodificar Base64</h3>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL · TEXTO</span><button class="copy" type="button">Copiar</button></div><pre><code>[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("SG9sYSAyU01S"))</code></pre></div>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL · ARCHIVO</span><button class="copy" type="button">Copiar</button></div><pre><code>$t = Get-Content .\archivo.txt -Raw
+[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($t))</code></pre></div>
+        <p>En <b>CyberChef</b>: operación <b>From Base64</b>.</p>
+        <h3>Hexadecimal</h3>
+        <p>Otra codificación: cada byte se escribe con <b>2 caracteres</b> del <code>0</code> al <code>9</code> y de la <code>a</code> a la <code>f</code>.</p>
+        <div class="hash"><b>Hola</b> → 48 6f 6c 61 → 486f6c61</div>
+        <p>Las claves, los IV y los hashes casi siempre se escriben en hexadecimal.</p>
+      </section>
+
+      <!-- 3 -->
+      <section class="unit" id="reposo">
+        <div class="unit-head"><span class="num">3</span><h2>Cifrado de datos en reposo</h2></div>
+        <div class="rooms"><span>SALA 1 · OFICINA</span></div>
+        <div class="def"><b>DATOS EN REPOSO</b>Datos almacenados: discos internos, discos externos, USB, NAS, copias de seguridad.</div>
+        <div class="box case"><b>CASO</b><p>Un comercial pierde su portátil en el tren. Tiene <b>contraseña de Windows</b>. Quien lo encuentra saca el disco y lo conecta a su ordenador. <b>¿Puede leer los archivos?</b></p><p><b>Sí.</b> La contraseña de Windows solo decide quién inicia sesión en ese Windows. El disco, en otro equipo, se lee entero.</p></div>
+        <div class="tbl-wrap"><table>
+          <tr><th>Situación</th><th>Solo contraseña de Windows</th><th>Disco cifrado</th></tr>
+          <tr><td>Alguien intenta iniciar sesión</td><td>🔒 No entra</td><td>🔒 No entra</td></tr>
+          <tr><td>Saca el disco y lo conecta a otro PC</td><td>🔓 <b>Lee todo</b></td><td>🔒 Datos ilegibles</td></tr>
+          <tr><td>Arranca el equipo desde un USB</td><td>🔓 <b>Lee todo</b></td><td>🔒 Datos ilegibles</td></tr>
+        </table></div>
+        <h3>Herramientas</h3>
+        <div class="tbl-wrap"><table>
+          <tr><th>Herramienta</th><th>Qué cifra</th><th>Notas</th></tr>
+          <tr><td><b>BitLocker</b></td><td>La unidad completa de Windows</td><td>Windows Pro/Enterprise. Genera una <b>clave de recuperación</b> de 48 dígitos.</td></tr>
+          <tr><td><b>BitLocker To Go</b></td><td>USB y discos externos</td><td>Se desbloquean con contraseña al conectarlos.</td></tr>
+          <tr><td><b>VeraCrypt</b></td><td>Unidades completas o «contenedores» (un archivo que se monta como disco)</td><td>Libre, gratuito y multiplataforma.</td></tr>
+          <tr><td><b>7-Zip (AES-256)</b></td><td>Archivos o carpetas concretas</td><td>Ideal para enviar o transportar datos. Ver <a href="#7zip">apartado 9</a>.</td></tr>
+        </table></div>
+        <div class="box warn"><b>OJO</b><p>Si se pierde la clave (o la clave de recuperación de BitLocker), <b>se pierden los datos</b>. No hay «puerta trasera». Las claves de recuperación se guardan en un lugar seguro, separado del equipo.</p></div>
+        <div class="box tip"><b>TAMPOCO PROTEGEN</b><p>Marcar archivos como «ocultos», cambiar la extensión, comprimir sin contraseña o esconder carpetas. Solo despistan.</p></div>
+      </section>
+
+      <!-- 4 -->
+      <section class="unit" id="aes">
+        <div class="unit-head"><span class="num">4</span><h2>Cifrado simétrico: AES en la práctica</h2></div>
+        <div class="rooms"><span>SALA 7 · DESPACHO</span></div>
+        <p class="lead"><b>AES</b> (Advanced Encryption Standard) es el cifrado simétrico más usado: BitLocker, 7-Zip, Wi-Fi WPA2/WPA3, HTTPS…</p>
+        <h3>Los ingredientes</h3>
+        <div class="tbl-wrap"><table>
+          <tr><th>Ingrediente</th><th>Qué es</th><th>¿Es secreto?</th></tr>
+          <tr><td>🔑 <b>Clave</b></td><td>AES-128 → 16 bytes · AES-256 → 32 bytes</td><td><b>Sí</b></td></tr>
+          <tr><td>🎲 <b>IV</b> (vector de inicialización)</td><td>16 bytes aleatorios. Hace que el mismo texto cifrado dos veces dé resultados distintos.</td><td>No: viaja junto al mensaje</td></tr>
+          <tr><td>⚙️ <b>Modo</b></td><td>Cómo se encadenan los bloques: CBC, GCM, CTR…</td><td>No</td></tr>
+          <tr><td>📄 <b>Texto cifrado</b></td><td>El resultado</td><td>No</td></tr>
+        </table></div>
+        <p>Para descifrar hay que tener <b>todos</b> los ingredientes correctos. Si falla uno solo, sale basura o un error.</p>
+        <h3>Tamaños en hexadecimal</h3>
+        <p>Como cada byte son 2 caracteres hex:</p>
+        <div class="grid2">
+          <div class="card"><h4>AES-128</h4><p>16 bytes → <b>32 caracteres</b> hex</p></div>
+          <div class="card dark"><h4>AES-256</h4><p>32 bytes → <b>64 caracteres</b> hex</p></div>
+        </div>
+        <div class="box tip"><b>TRUCO</b><p>Una clave también puede darse como texto (UTF-8): <code>CITED2026AULA123</code> son 16 caracteres = 16 bytes → vale como clave o IV de AES-128.</p></div>
+        <h3>Descifrar AES con CyberChef</h3>
+        <ol class="steps">
+          <li><span>Abre <a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">CyberChef</a> y arrastra la operación <b>AES Decrypt</b> a la receta.</span></li>
+          <li><span><b>Key</b>: pega la clave y elige su tipo (<b>HEX</b> si son caracteres 0-9 a-f; <b>UTF8</b> si es texto normal).</span></li>
+          <li><span><b>IV</b>: igual, con su tipo.</span></li>
+          <li><span><b>Mode</b>: el que se usó (por ejemplo <b>CBC</b>).</span></li>
+          <li><span><b>Input</b>: <b>Hex</b> si el texto cifrado viene en hexadecimal · <b>Output</b>: <b>Raw</b>.</span></li>
+          <li><span>Pega el texto cifrado en la caja <b>Input</b> (arriba a la derecha).</span></li>
+        </ol>
+        <div class="box case"><b>PRACTICA</b><p>AES-128-CBC · Key (HEX): <code>000102030405060708090a0b0c0d0e0f</code> · IV (HEX): <code>a1a2a3a4a5a6a7a8a9aaabacadaeafb0</code></p>
+          <div class="hash">1ef9a0d5da3e917c985da857af682a8ac4a2018b706912c8cd1413f0270d70fda1d48714dc63433857eed78a69c5739d</div>
+          <p>Si lo haces bien, leerás una frase que empieza por «Apuntes».</p></div>
+        <div class="box warn"><b>ERRORES TÍPICOS</b><p>• <i>Invalid key length</i> → la clave no mide 16/24/32 bytes o has puesto UTF8 en vez de HEX.<br>• Sale texto raro → IV, modo o clave incorrectos.<br>• No sale nada → revisa que <b>Input</b> esté en Hex.</p></div>
+        <h3>¿Y si mi clave es una contraseña?</h3>
+        <p>Una contraseña como <code>1234</code> no mide 32 bytes. Una forma de convertirla en clave AES-256 es calcular su <b>SHA-256</b> (ver <a href="#hash">apartado 6</a>): el resultado siempre mide 32 bytes = 64 caracteres hex.</p>
+        <div class="hash"><b>SHA-256("1234")</b> = 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4</div>
+        <p class="muted">Los programas profesionales usan funciones más lentas pensadas para esto (PBKDF2, Argon2), pero la idea es la misma.</p>
+      </section>
+
+      <!-- 5 -->
+      <section class="unit" id="asimetrico">
+        <div class="unit-head"><span class="num">5</span><h2>Cifrado asimétrico en la práctica</h2></div>
+        <div class="rooms"><span>SALA 3 · CARLOS</span><span>SALA 9 · SALIDA</span></div>
+        <div class="keys">
+          <div class="key pub"><span class="ico">🗝️</span><div><b>Clave pública</b>Se reparte a cualquiera. Sirve para <b>cifrar para ti</b> y para <b>verificar tus firmas</b>.</div></div>
+          <div class="key priv"><span class="ico">🔑</span><div><b>Clave privada</b>Solo la tienes tú. Sirve para <b>descifrar lo que te envían</b> y para <b>firmar</b>.</div></div>
+        </div>
+        <h3>¿Quién usa cada clave?</h3>
+        <div class="tbl-wrap"><table>
+          <tr><th>Quiero…</th><th>Uso la clave…</th></tr>
+          <tr><td>Enviar algo <b>secreto</b> a Carlos</td><td><b>pública de Carlos</b></td></tr>
+          <tr><td>Que Carlos lea lo que le han enviado</td><td><b>privada de Carlos</b></td></tr>
+          <tr><td><b>Firmar</b> un documento (demostrar que soy yo)</td><td><b>mi privada</b></td></tr>
+          <tr><td>Comprobar la firma de Ana</td><td><b>pública de Ana</b></td></tr>
+        </table></div>
+        <div class="def"><b>REGLA RÁPIDA</b>Cifrar → la <b>pública del destinatario</b>. Firmar → <b>mi privada</b>.</div>
+        <div class="box warn"><b>OJO</b><p>Lo que se cifra con la clave pública de alguien <b>no lo puede descifrar ni quien lo cifró</b>: solo el dueño de la privada. Y tener la clave pública de otra persona no permite leer sus mensajes.</p></div>
+        <h3>Las claves son archivos: formato PEM</h3>
+        <div class="cmd"><div class="cmd-head"><span>carlos_publica.pem</span></div><pre><code>-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA+fmklneUcBj+6YrNZ9Kp
+... (varias líneas en Base64) ...
+-----END PUBLIC KEY-----</code></pre></div>
+        <p>• <code>BEGIN PUBLIC KEY</code> → se puede compartir. • <code>BEGIN PRIVATE KEY</code> → <b>nunca sale de tu equipo</b>.<br>Se abren con el Bloc de notas. Por dentro están en… Base64.</p>
+        <h3>Descifrar RSA con CyberChef</h3>
+        <ol class="steps">
+          <li><span>Si el mensaje cifrado viene en Base64, primero la operación <b>From Base64</b>.</span></li>
+          <li><span>Debajo, la operación <b>RSA Decrypt</b>.</span></li>
+          <li><span>En <b>RSA Private Key (PEM)</b> pega la clave <b>completa</b>, incluidas las líneas <code>-----BEGIN…</code> y <code>-----END…</code>.</span></li>
+          <li><span>Elige el <b>Encryption Scheme</b> y el <b>Message Digest</b> que se usaron al cifrar (por ejemplo RSA-OAEP y SHA-1).</span></li>
+        </ol>
+        <p>Si eliges una clave que no corresponde, CyberChef da error: es la prueba de que solo una clave sirve.</p>
+        <h3>Firma digital</h3>
+        <p>La firma <b>no oculta</b> el contenido. Demuestra dos cosas:</p>
+        <div class="grid2">
+          <div class="card"><h4>✍️ Autenticidad</h4><p>Lo firmó quien dice ser: solo él tiene su clave privada.</p></div>
+          <div class="card"><h4>🧾 Integridad</h4><p>Nadie lo modificó después de firmarlo.</p></div>
+        </div>
+        <p>Cómo funciona por dentro: se calcula el <b>hash</b> del documento y se cifra con la clave <b>privada</b> del firmante. Quien recibe recalcula el hash y lo compara con la firma usando la <b>pública</b>.</p>
+        <p>Ejemplos: DNI electrónico, certificado digital de la FNMT, facturas electrónicas, actualizaciones de Windows.</p>
+        <h3>En la vida real: los dos a la vez</h3>
+        <p><b>HTTPS</b> usa asimétrico para acordar una clave de sesión de forma segura y después <b>AES</b> (simétrico, rápido) para todos los datos. Se llama <b>cifrado híbrido</b>.</p>
+      </section>
+
+      <!-- 6 -->
+      <section class="unit" id="hash">
+        <div class="unit-head"><span class="num">6</span><h2>Hash e integridad</h2></div>
+        <div class="rooms"><span>SALA 4 · ARCHIVO</span><span>SALA 5 · LABORATORIO</span><span>SALA 6 · COPIAS</span></div>
+        <div class="box case"><b>CASO</b><p>Recibimos un contrato: «Transferencia: 1000 EUR». Sospechamos que alguien lo ha cambiado por el camino, pero a simple vista parece correcto. <b>¿Cómo lo comprobamos?</b></p></div>
+        <div class="def"><b>FUNCIÓN HASH</b>Convierte cualquier dato, de cualquier tamaño, en una <b>huella</b> de tamaño fijo. Si el dato cambia, la huella cambia.</div>
+        <h3>Propiedades</h3>
+        <div class="tbl-wrap"><table>
+          <tr><th>Propiedad</th><th>Significado</th></tr>
+          <tr><td><b>Tamaño fijo</b></td><td>Un archivo de 1 byte o de 10 GB → SHA-256 siempre da <b>64 caracteres</b> hex (32 bytes).</td></tr>
+          <tr><td><b>Determinista</b></td><td>El mismo dato produce <b>siempre</b> el mismo hash, en cualquier ordenador.</td></tr>
+          <tr><td><b>Un solo sentido</b></td><td>Del hash <b>no</b> se puede obtener el dato original.</td></tr>
+          <tr><td><b>Efecto avalancha</b></td><td>Un cambio mínimo (una letra, un espacio) cambia el hash por completo.</td></tr>
+          <tr><td><b>Impredecible</b></td><td>No hay forma de saber qué hash saldrá sin calcularlo. Para conseguir un hash concreto solo queda <b>probar y probar</b>.</td></tr>
+        </table></div>
+        <h3>Efecto avalancha</h3>
+        <div class="hash"><b>hola</b> → b221d9dbb083a7f33428d7c2a3c3198ae925614d70210e28716ccaa7cd4ddb79</div>
+        <div class="hash"><b>Hola</b> → e633f4fc79badea1dc5db970cf397c8248bac47cc3acf9915ba60b5d76b0e88f</div>
+        <div class="hash"><b>hola.</b> → 3b952738efe124f6b34181cb9e608432741ab05df195462dc98b26f50f9ef217</div>
+        <p>«Transferencia: 1000 EUR» y «Transferencia: 9000 EUR» solo coinciden en 3 de los 64 caracteres, que es lo que se espera por puro azar.</p>
+        <h3>Hash ≠ cifrado</h3>
+        <div class="tbl-wrap"><table>
+          <tr><th></th><th>Cifrado</th><th>Hash</th></tr>
+          <tr><td><b>¿Para qué?</b></td><td><b>Confidencialidad</b>: ocultar</td><td><b>Integridad</b>: detectar cambios</td></tr>
+          <tr><td><b>¿Se puede deshacer?</b></td><td>Sí, con la clave</td><td><b>No, nunca</b></td></tr>
+          <tr><td><b>¿Usa clave?</b></td><td>Sí</td><td>No</td></tr>
+          <tr><td><b>Tamaño del resultado</b></td><td>Parecido al original</td><td>Siempre el mismo</td></tr>
+          <tr><td><b>Ejemplos</b></td><td>AES, RSA</td><td>SHA-256, SHA-512</td></tr>
+        </table></div>
+        <div class="box warn"><b>OJO</b><p>«Descifrar un hash» no existe. Y <b>MD5</b> y <b>SHA-1</b> están obsoletos para seguridad: usa <b>SHA-256</b>.</p></div>
+        <h3>¿Para qué se usa?</h3>
+        <p>✔ Comprobar que un archivo descargado es el original · ✔ Verificar copias de seguridad · ✔ Firmas digitales · ✔ Guardar contraseñas (con «sal») · ✔ Convertir una contraseña en una clave.</p>
+      </section>
+
+      <!-- 7 -->
+      <section class="unit" id="calcular">
+        <div class="unit-head"><span class="num">7</span><h2>Calcular hashes</h2></div>
+        <div class="rooms"><span>SALAS 4 · 5 · 6 · 7</span></div>
+        <h3>Hash de un archivo (PowerShell)</h3>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>cd $HOME\Downloads
+Get-FileHash .\contrato.txt -Algorithm SHA256</code></pre></div>
+        <p>Varios archivos a la vez, con el comodín <code>*</code>:</p>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>Get-FileHash .\*.txt -Algorithm SHA256 | Format-List Path, Hash</code></pre></div>
+        <h3>Hash de un texto (PowerShell)</h3>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>$s = "hola"
+-join ([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($s)) | ForEach-Object { $_.ToString("x2") })</code></pre></div>
+        <p>Resultado: <code>b221d9db…cd4ddb79</code>. En <b>CyberChef</b> es la operación <b>SHA2</b> con tamaño <b>256</b>.</p>
+        <h3>Crear un archivo exacto</h3>
+        <p>El Bloc de notas a veces añade un salto de línea al final, y eso <b>cambia el hash</b>. Para crear un archivo con un contenido exacto:</p>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>Set-Content .\mensaje.txt "hola" -NoNewline</code></pre></div>
+        <h3>Probar muchos valores (bucle)</h3>
+        <p>Como un hash es impredecible, si necesitamos uno con una forma concreta la única opción es probar. Un bucle <code>for</code> repite una acción cambiando un número:</p>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL · ESTRUCTURA DE UN BUCLE</span><button class="copy" type="button">Copiar</button></div><pre><code>for ($n = 0; $n -lt 10; $n++) {
+  "Probando el número $n"
+}</code></pre></div>
+        <div class="box tip"><b>DETALLES</b><p>• <code>Get-FileHash</code> muestra el hash en <b>MAYÚSCULAS</b> y CyberChef en <b>minúsculas</b>: es el mismo hash.<br>• Si dice «no se encuentra la ruta», estás en otra carpeta: usa <code>cd</code> y <code>dir</code>.<br>• Para comparar dos hashes basta con fijarse en el principio y el final.</p></div>
+      </section>
+
+      <!-- 8 -->
+      <section class="unit" id="copias">
+        <div class="unit-head"><span class="num">8</span><h2>Verificar copias de seguridad</h2></div>
+        <div class="rooms"><span>SALA 6 · COPIAS</span></div>
+        <p class="lead">Una copia que no se comprueba <b>no es fiable</b>. Puede estar corrupta (fallo de disco, copia interrumpida) o manipulada.</p>
+        <h3>El manifiesto de hashes</h3>
+        <p>Al hacer la copia se guarda un archivo (por ejemplo <code>SHA256SUMS.txt</code>) con el hash de cada archivo copiado:</p>
+        <div class="cmd"><div class="cmd-head"><span>SHA256SUMS.txt</span></div><pre><code>44b0e3218e2189fb3cc5a22c5922bc7d4ecc82828146b53312214e7361e86a45  facturas.txt
+7201a5d59f74305a355bfce098ed75f18c9b857e068a4d1f62de33a2a7d579ff  clientes.txt</code></pre></div>
+        <ol class="steps">
+          <li><span>Antes de restaurar, recalcula el hash de cada archivo de la copia (<code>Get-FileHash</code>).</span></li>
+          <li><span>Compáralo con su línea del manifiesto.</span></li>
+          <li><span>¿Alguno no coincide? → esa copia está <b>dañada o manipulada</b>: no se restaura. Se recupera desde otra copia (otro soporte u otra ubicación).</span></li>
+        </ol>
+        <div class="box tip"><b>EN LA VIDA REAL</b><p>Las distribuciones de Linux publican un <code>SHA256SUMS</code> junto a sus ISO para que compruebes la descarga. Muchos programas de backup verifican las copias exactamente así.</p></div>
+        <h3>Recuerda: regla 3-2-1 + cifrado</h3>
+        <p><b>3</b> copias · <b>2</b> soportes distintos · <b>1</b> fuera de la ubicación principal. La copia que sale del edificio contiene los mismos datos confidenciales que el original: <b>debe ir cifrada</b>.</p>
+      </section>
+
+      <!-- 9 -->
+      <section class="unit" id="7zip">
+        <div class="unit-head"><span class="num">9</span><h2>Proteger un paquete con 7-Zip</h2></div>
+        <div class="rooms"><span>SALA 8 · CÁMARA</span></div>
+        <ol class="steps">
+          <li><span>Clic derecho sobre la carpeta → <b>7-Zip → Añadir al archivo…</b></span></li>
+          <li><span>Formato de archivo: <b>7z</b>.</span></li>
+          <li><span>Zona <b>Encriptación</b>: escribe la contraseña dos veces.</span></li>
+          <li><span>Método de cifrado: <b>AES-256</b>.</span></li>
+          <li><span>Marca <b>Cifrar nombres de archivo</b>.</span></li>
+        </ol>
+        <div class="grid2">
+          <div class="card"><h4>Sin «cifrar nombres»</h4><p>No se pueden abrir los archivos, pero <b>se ve qué archivos hay</b> (<code>nominas_2026.xlsx</code>…). Eso ya es información.</p></div>
+          <div class="card dark"><h4>Con «cifrar nombres»</h4><p>Sin la contraseña no se ve <b>nada</b>: ni el contenido ni la lista de archivos.</p></div>
+        </div>
+        <h3>Comprobar que está cifrado</h3>
+        <p>Abre el <code>.7z</code> con 7-Zip. Puedes añadir la columna <b>Método</b> (clic derecho en las cabeceras): si aparece <code>7zAES</code>, el archivo está cifrado. Desde la consola:</p>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>&amp; "C:\Program Files\7-Zip\7z.exe" l -slt .\CONFIDENCIAL.7z</code></pre></div>
+        <p>Te pedirá la contraseña y mostrará, para cada archivo, líneas como <code>Path</code>, <code>Size</code> (tamaño original en bytes) y <code>Method</code>.</p>
+        <div class="box warn"><b>BUENAS PRÁCTICAS</b><p>• La contraseña se envía <b>por otro canal</b> (teléfono, en persona), nunca en el mismo correo que el archivo.<br>• Contraseña larga: mejor una frase que una palabra.<br>• Si se olvida, el contenido es irrecuperable.</p></div>
+      </section>
+
+      <!-- 10 -->
+      <section class="unit" id="principios">
+        <div class="unit-head"><span class="num">10</span><h2>Principios de seguridad</h2></div>
+        <div class="rooms"><span>SALA 9 · SALIDA</span></div>
+        <div class="tbl-wrap"><table>
+          <tr><th>Principio</th><th>Pregunta que responde</th><th>Herramientas</th></tr>
+          <tr><td><b>Confidencialidad</b></td><td>¿Puede leerlo alguien no autorizado?</td><td>Cifrado: AES, RSA, BitLocker, VeraCrypt, 7-Zip</td></tr>
+          <tr><td><b>Integridad</b></td><td>¿Ha cambiado?</td><td>Hash (SHA-256), manifiestos de copias</td></tr>
+          <tr><td><b>Disponibilidad</b></td><td>¿Podré usarlo/recuperarlo cuando lo necesite?</td><td>Copias de seguridad (3-2-1), RAID, redundancia</td></tr>
+          <tr><td><b>Autenticidad</b></td><td>¿Quién lo hizo? ¿Es quien dice ser?</td><td>Firma digital, certificados</td></tr>
+        </table></div>
+        <div class="box warn"><b>NO PROTEGEN NADA</b><p>Base64 y otras codificaciones · archivos ocultos · cambiar la extensión · comprimir sin contraseña · «nadie sabe que está ahí».</p></div>
+        <h3>Autoevaluación</h3>
+        <div class="quiz">
+          <details><summary>1. Un técnico lleva un disco externo con las nóminas a otra sede. ¿Qué usarías?</summary><p>Cifrado del disco (BitLocker To Go o VeraCrypt) o un 7z con AES-256. → Confidencialidad.</p></details>
+          <details><summary>2. Descargas una ISO de Ubuntu. ¿Cómo sabes que es la original?</summary><p>Calculas su SHA-256 y lo comparas con el publicado en la web oficial. → Integridad.</p></details>
+          <details><summary>3. Hacienda necesita saber que una factura la emitió tu empresa.</summary><p>Firma digital con el certificado (clave privada) de la empresa. → Autenticidad.</p></details>
+          <details><summary>4. Quieres enviar a un cliente un presupuesto que solo pueda leer él.</summary><p>Cifrarlo con la clave pública del cliente, o un 7z con contraseña enviada por otro canal. → Confidencialidad.</p></details>
+          <details><summary>5. Un compañero «protege» un archivo convirtiéndolo a Base64.</summary><p>No protege nada: es codificación, cualquiera la revierte.</p></details>
+          <details><summary>6. ¿Se puede descifrar un hash SHA-256?</summary><p>No. Es una función de un solo sentido. Lo único que se puede hacer es calcular hashes de posibles entradas y comparar.</p></details>
+        </div>
+      </section>
+
+      <!-- 11 -->
+      <section class="unit" id="herramientas">
+        <div class="unit-head"><span class="num">11</span><h2>Caja de herramientas</h2></div>
+        <div class="rooms"><span>TODAS LAS SALAS</span></div>
+        <h3>PowerShell: lo mínimo</h3>
+        <div class="tbl-wrap"><table>
+          <tr><th>Necesito…</th><th>Comando</th></tr>
+          <tr><td>Ir a Descargas</td><td><code>cd $HOME\Downloads</code></td></tr>
+          <tr><td>Ver qué hay en la carpeta</td><td><code>dir</code></td></tr>
+          <tr><td>Ver en qué carpeta estoy</td><td><code>pwd</code></td></tr>
+          <tr><td>Leer un archivo</td><td><code>Get-Content .\archivo.txt</code></td></tr>
+          <tr><td>Crear un archivo con un texto exacto</td><td><code>Set-Content .\a.txt "texto" -NoNewline</code></td></tr>
+          <tr><td>Hash de un archivo</td><td><code>Get-FileHash .\archivo -Algorithm SHA256</code></td></tr>
+          <tr><td>Descodificar Base64</td><td><code>[Convert]::FromBase64String(...)</code> (ver <a href="#codificar">apartado 2</a>)</td></tr>
+        </table></div>
+        <div class="box tip"><b>TRUCOS</b><p>• <b>Tab</b> autocompleta nombres de archivos.<br>• <b>↑</b> recupera el comando anterior.<br>• <code>.\</code> significa «en esta carpeta».<br>• Pegar en PowerShell: clic derecho o Ctrl+V.</p></div>
+        <h3>CyberChef</h3>
+        <p><a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">gchq.github.io/CyberChef</a> · funciona en el navegador, no hay que instalar nada.</p>
+        <div class="grid2">
+          <div class="card"><h4>Zonas</h4><p><b>Operations</b> (izquierda): lista de operaciones, con buscador.<br><b>Recipe</b> (centro): las operaciones que aplicas, en orden.<br><b>Input</b> (arriba derecha): los datos de entrada.<br><b>Output</b> (abajo derecha): el resultado.</p></div>
+          <div class="card"><h4>Operaciones útiles</h4><p><b>From Base64</b> / <b>To Base64</b><br><b>From Hex</b> / <b>To Hex</b><br><b>SHA2</b> (tamaño 256)<br><b>AES Decrypt</b> / <b>AES Encrypt</b><br><b>RSA Decrypt</b></p></div>
+        </div>
+        <div class="box tip"><b>RECETAS</b><p>Las operaciones se encadenan: el resultado de una es la entrada de la siguiente. Ejemplo: <b>From Base64</b> → <b>RSA Decrypt</b>. Puedes arrastrar un archivo directamente a la zona Input.</p></div>
+      </section>
+
+      <!-- 12 -->
+      <section class="unit" id="glosario">
+        <div class="unit-head"><span class="num">12</span><h2>Glosario</h2></div>
+        <dl class="glossary">
+          <dt>AES</dt><dd>Algoritmo de cifrado simétrico estándar. Claves de 128, 192 o 256 bits.</dd>
+          <dt>Base64</dt><dd>Codificación que representa datos con 64 caracteres imprimibles. No protege.</dd>
+          <dt>BitLocker</dt><dd>Cifrado de unidades completas integrado en Windows.</dd>
+          <dt>Cifrado híbrido</dt><dd>Combinar asimétrico (para intercambiar la clave) y simétrico (para los datos). Lo usa HTTPS.</dd>
+          <dt>Clave privada</dt><dd>Mitad secreta del par asimétrico. Descifra y firma.</dd>
+          <dt>Clave pública</dt><dd>Mitad compartible del par asimétrico. Cifra para su dueño y verifica sus firmas.</dd>
+          <dt>Datos en reposo</dt><dd>Información almacenada en un soporte (disco, USB, copia).</dd>
+          <dt>Efecto avalancha</dt><dd>Un cambio mínimo en la entrada produce un hash totalmente distinto.</dd>
+          <dt>Firma digital</dt><dd>Hash de un documento cifrado con la clave privada del firmante. Aporta autenticidad e integridad.</dd>
+          <dt>Hash</dt><dd>Huella de tamaño fijo de unos datos. De un solo sentido.</dd>
+          <dt>Hexadecimal</dt><dd>Codificación de bytes con 2 caracteres (0-9, a-f) cada uno.</dd>
+          <dt>IV</dt><dd>Vector de inicialización: valor aleatorio, no secreto, que se usa junto a la clave en AES-CBC.</dd>
+          <dt>Manifiesto</dt><dd>Lista de archivos con su hash, usada para verificar copias o descargas.</dd>
+          <dt>PEM</dt><dd>Formato de texto para guardar claves y certificados (BEGIN/END + Base64).</dd>
+          <dt>RSA</dt><dd>Algoritmo de cifrado asimétrico.</dd>
+          <dt>SHA-256</dt><dd>Función hash que produce 256 bits (64 caracteres hex). La recomendada hoy.</dd>
+          <dt>VeraCrypt</dt><dd>Software libre para crear contenedores y unidades cifradas.</dd>
+        </dl>
+      </section>
+    </main>
+  </div>
+  <footer>CITED · Seguridad Informática · 2º SMR · UD2 · Apuntes de consulta</footer>
+
+  <script>
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest(".copy"); if (!b) return;
+      const t = b.closest(".cmd").querySelector("code").textContent;
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+        () => { b.textContent = "Copiado ✓"; setTimeout(() => (b.textContent = "Copiar"), 1400); },
+        () => { b.textContent = "Selecciónalo"; });
+    });
+    // marca el apartado visible en el índice
+    try {
+      const links = [...document.querySelectorAll(".toc a")];
+      const io = new IntersectionObserver((es) => es.forEach((en) => {
+        if (en.isIntersecting) links.forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + en.target.id));
+      }), { rootMargin: "-20% 0px -70% 0px" });
+      document.querySelectorAll("section.unit").forEach((s) => io.observe(s));
+    } catch (e) {}
+  </script>
+</body>
+</html>

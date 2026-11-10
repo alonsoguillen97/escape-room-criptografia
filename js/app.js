@@ -797,7 +797,7 @@
     app.innerHTML = `<section class="room enter">
       <div class="room-head"><span class="eyebrow">SALA ${idx + 1} DE ${ROOMS.length}</span><h2>${room.title}</h2></div>
       <div class="room-grid">
-        <div class="scene card"><div class="scene-inner">${SCENES[room.scene]()}<div class="hs-layer"></div></div><p class="scene-tip">Haz clic en los objetos marcados para investigar.</p></div>
+        <div class="scene card"><div class="scene-inner">${SCENES[room.scene]()}<div class="hs-layer"></div></div><p class="scene-tip">Haz clic en los objetos marcados para investigar. ¿Te falta teoría? <a href="apuntes.html" target="_blank" rel="noopener">📘 Apuntes</a></p></div>
         <aside class="side">
           <div class="card radio"><div class="radio-head"><span class="radio-led"></span>RADIO · JEFA DE SEGURIDAD</div><p id="radioText"></p></div>
           <div class="card objectives"><h3>Objetivos</h3><ul></ul></div>
@@ -872,7 +872,7 @@
           <div><b>Necesitaréis</b><ul><li>PowerShell</li><li>CyberChef (navegador)</li><li>7-Zip</li><li>un USB o la nube para guardar la partida</li></ul></div>
         </div>
         <div class="rules"><span>🏆 Gana el equipo con más puntos</span><span>🎯 ${C.START_SCORE} puntos</span><span>✗ Error −${C.PENALTY_WRONG}</span><span>💡 Pista −${C.PENALTY_HINT}</span><span>★ Sala limpia +${C.BONUS_CLEAN}</span></div>
-        <p class="small muted">Cada equipo recibe datos distintos. Copiar a otro equipo o preguntarle a una IA no sirve: hay que calcularlo de verdad. Activad el sonido 🔊. Al acabar la clase pulsad 💾 para guardar la partida en un archivo.</p>
+        <p class="small muted">Cada equipo recibe datos distintos. Copiar a otro equipo o preguntarle a una IA no sirve: hay que calcularlo de verdad. Activad el sonido 🔊. Al acabar la clase pulsad 💾 para guardar la partida en un archivo. Tenéis los <a href="apuntes.html" target="_blank" rel="noopener">📘 apuntes</a> siempre a mano (botón 📘 arriba).</p>
         <form class="start" id="startForm"><label><span>Nombre del equipo</span><input id="teamName" maxlength="30" required autocomplete="off" placeholder="p. ej. Los Hashers"></label><button class="btn big" type="submit">ENTRAR EN EL EDIFICIO</button></form>
         <div class="load-row">¿Venís de otra clase? ${loadButton()}</div>
       </div></section>`;
