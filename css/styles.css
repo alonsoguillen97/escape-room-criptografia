@@ -436,6 +436,8 @@ body.alarm .scene, body.alarm .win { animation: shake .4s; }
 
 /* teclas de responder */
 .keys-pick { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 14px 0; }
+.keys-pick.three { grid-template-columns: repeat(3, 1fr); }
+.dec-out { margin-top: 12px; }
 .keys-pick .keycard { justify-content: center; padding: 14px; font-size: 1rem; cursor: pointer; }
 .keycard.correct { outline: 5px solid var(--lime); }
 .keycard.wrong { opacity: .45; animation: shake .4s; }

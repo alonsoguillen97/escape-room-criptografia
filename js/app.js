@@ -195,7 +195,7 @@
       <rect x="580" y="60" width="180" height="120" rx="8" fill="${W}"/>${txt(594, 88, "BASE64 =", 15)}${mono(594, 112, "A-Z a-z 0-9 + /", 13)}${mono(594, 134, "relleno: =", 13)}${txt(594, 162, "¿cifrado? 🤔", 14)}`, "#DDE6F3"),
     carlos: () => sk(`
       <rect x="60" y="170" width="110" height="80" rx="10" fill="${W}"/><path d="M60 200h110"/><path d="M115 250v80"/><path d="M170 180v-30h22v14h-22" fill="${R}" stroke="${N}"/>${txt(84, 232, "BUZÓN", 13)}
-      <rect x="220" y="60" width="130" height="100" rx="6" fill="#E9C994"/><rect x="236" y="74" width="98" height="72" rx="4" fill="#FFF6D8"/>${txt(246, 100, "Manual", 13)}${txt(246, 120, "CyberChef", 13)}<circle cx="285" cy="70" r="5" fill="${R}"/>
+      <rect x="220" y="60" width="130" height="100" rx="6" fill="#E9C994"/><rect x="236" y="74" width="98" height="72" rx="4" fill="#FFF6D8"/>${txt(242, 100, "Descifrador", 13)}${txt(246, 120, "RSA", 13)}<circle cx="285" cy="70" r="5" fill="${R}"/>
       <rect x="330" y="262" width="320" height="16" rx="4" fill="${W}"/><path d="M350 278v52M630 278v52"/>
       <g data-unless="caja"><rect x="420" y="205" width="120" height="57" rx="8" fill="#C7A06A"/><rect x="465" y="222" width="30" height="26" rx="4" fill="${L}"/><path d="M470 222v-8a10 10 0 0 1 20 0v8"/></g>
       <g data-when="caja"><rect x="420" y="225" width="120" height="37" rx="8" fill="#C7A06A"/><path d="M420 225l-10-40h120l10 40" fill="#E2BE88"/>${txt(450, 218, "✉ OK", 14, N)}</g>
@@ -295,10 +295,10 @@
     /* ---------------- SALA 3 ---------------- */
     {
       id: "carlos", short: "Carlos", title: "El despacho de Carlos", scene: "carlos", keyword: "CLAVE",
-      intro: "Despacho de Carlos. Ana le dejó una carta cifrada con RSA en el buzón. Tienes el llavero de Carlos con varias claves… solo una sirve para descifrar. Dentro de la carta está la combinación de la caja.",
+      intro: "Despacho de Carlos. Ana le dejó una carta cifrada con RSA en el buzón. Recógela y usa el descifrador de la pared: tienes que cargar la clave correcta del llavero. En la carta está la combinación de la caja.",
       hints: [
-        "La carta se cifró con la clave PÚBLICA de Carlos. ¿Con cuál de las claves del llavero se descifra?",
-        "CyberChef: From Base64 → RSA Decrypt. Pega la clave completa (con las líneas BEGIN/END). Encryption scheme: RSA-OAEP · Message Digest: SHA-1.",
+        "La carta se cifró con la clave PÚBLICA de Carlos. ¿Qué clave la abre?",
+        "Abre los archivos .pem del llavero con el Bloc de notas: la primera línea dice PUBLIC o PRIVATE.",
       ],
       lesson: "Lo cifrado con la <b>clave pública</b> de alguien solo se descifra con su <b>clave privada</b>. Por eso la pública se puede repartir y la privada no sale nunca del llavero. Para responder a Ana se usa <b>su</b> clave pública.",
       objectives: [
@@ -308,9 +308,23 @@
       ],
       hotspots: [
         { id: "mail", x: 55, y: 140, w: 140, h: 120, label: "Buzón", done: (a) => a.done("carta"), open: (a) => { a.give("carta"); a.complete("carta", "Tienes la carta cifrada de Ana"); openItem("carta"); } },
-        { id: "manual", x: 215, y: 55, w: 140, h: 110, label: "Manual CyberChef", open: () => openWin("Manual: descifrar con RSA", (b) => {
-          b.innerHTML = `<ol class="howto"><li>Abre ${CHEF}.</li><li>Pega el contenido de <code>carta_cifrada.txt</code> en <b>Input</b>.</li><li>Añade la operación <b>From Base64</b>.</li><li>Añade debajo <b>RSA Decrypt</b>.</li><li>En <b>RSA Private Key (PEM)</b> pega la clave completa, incluidas las líneas <code>-----BEGIN…</code> y <code>-----END…</code>.</li><li>Encryption Scheme: <b>RSA-OAEP</b> · Message Digest: <b>SHA-1</b>.</li></ol><p class="small muted">Las claves están en el llavero de tu inventario. Ábrelas con el Bloc de notas.</p>`;
-        }, { icon: "📘" }) },
+        { id: "manual", x: 215, y: 55, w: 140, h: 110, label: "Descifrador RSA", show: (a) => a.done("carta"), open: (a) => openWin("Descifrador RSA de Carlos", (b) => {
+          b.innerHTML = `<p>Este programa descifra cartas RSA. <b>Elige qué clave del llavero cargar</b>:</p><div class="keys-pick three">${[["carlosPub", "carlos_publica.pem", "pub"], ["carlosPriv", "carlos_privada.pem", "priv"], ["anaPub", "ana_publica.pem", "pub"]].map(([k, t, c]) => `<button type="button" class="keycard ${c}" data-key="${k}"><span>${c === "priv" ? "🔑" : "🗝️"}</span>${t}</button>`).join("")}</div><p class="small muted">Pista: abre los .pem del llavero con el Bloc de notas. La primera línea dice qué tipo de clave es.</p><div class="dec-out"></div>`;
+          $$("[data-key]", b).forEach((k) => (k.onclick = async () => {
+            const out = $(".dec-out", b);
+            if (k.dataset.key !== "carlosPriv") {
+              k.classList.add("wrong");
+              out.innerHTML = `<div class="scan-screen nomatch"><b>✗ ERROR AL DESCIFRAR</b><br>${k.dataset.key === "anaPub" ? "Esa clave es de Ana, y además es pública: una clave pública no descifra." : "Una clave PÚBLICA sirve para cifrar, no para descifrar."}</div>`;
+              return a.fail("Esa clave no abre la carta");
+            }
+            k.classList.add("correct");
+            out.innerHTML = `<div class="scan-screen scanning"><div class="scan-line"></div><div class="scan-out">Descifrando con carlos_privada.pem…</div></div>`;
+            const txt = await CN.rsaDecrypt(S.rsa.carlosPriv, S.rsa.cipherB64);
+            await sleep(1000);
+            out.innerHTML = `<div class="paper mono-paper">${esc(txt)}</div><p class="small muted">Lo que se cifra con la clave <b>pública</b> de Carlos solo se abre con su clave <b>privada</b>.</p>`;
+            Snd.ok();
+          }));
+        }, { icon: "💻", wide: true }) },
         { id: "box", x: 405, y: 175, w: 150, h: 92, label: "Caja con candado", done: (a) => a.done("caja"), open: (a) => openWin("Candado de combinación", (b, close) => {
           b.insertAdjacentHTML("beforeend", `<p>Tres ruedas. La combinación está en la carta de Ana.</p>`);
           wheels(b, 3, async (vals) => { if (vals.join("") === D.combo.join("")) { a.complete("caja", "¡Candado abierto!"); Snd.door(); a.radio("Dentro hay un borrador: Carlos tenía que contestar a Ana. Usa la bandeja de salida."); setTimeout(close, 900); return true; } a.fail("El candado no se abre"); return false; });
@@ -353,7 +367,7 @@
       intro: "Laboratorio de huellas. Antes de autorizar la transferencia hay que demostrar cómo se comporta SHA-256 cuando cambia un solo carácter. Y la selladora solo acepta transferencias con un hash muy concreto…",
       hints: [
         "El contenido debe ser EXACTO. Créalo con el comando Set-Content que aparece en el monitor y pega el hash completo (64 caracteres).",
-        "Selladora: no se puede «calcular hacia atrás». Ejecuta el bucle de PowerShell: prueba números hasta que el hash empiece por 000.",
+        "Selladora: copia el script entero, pégalo en PowerShell y pulsa Intro. Él solo prueba números hasta encontrar uno válido.",
       ],
       lesson: "Cambiar <b>un carácter</b> cambia el hash por completo (<b>efecto avalancha</b>), y no hay forma de predecir el resultado: para conseguir un hash concreto solo queda <b>probar y probar</b>. Por eso nadie puede fabricar un documento falso con la misma huella.",
       objectives: [
@@ -376,7 +390,7 @@
           b.innerHTML = `<p>Norma de la empresa: solo se sellan transferencias cuyo SHA-256 <b>empiece por <code>${C.MINING_PREFIX}</code></b>. Para conseguirlo se añade al final <code> #número</code>. ¿Qué número? Nadie lo sabe: hay que probar.</p>
             <div class="hashbox"><code>${esc(D.msg1)} #<span class="hl">?</span></code></div>
             ${cmd(`$base = "${D.msg1}"\n$sha = [Security.Cryptography.SHA256]::Create()\nfor ($n = 0; $n -lt 100000; $n++) {\n  $texto = "$base #$n"\n  $hash = -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($texto)) | ForEach-Object { $_.ToString("x2") })\n  if ($hash.StartsWith("${C.MINING_PREFIX}")) { "$n  ->  $hash"; break }\n}`)}
-            <p class="small muted">Prueba primero a mano unos cuantos números en ${CHEF} (operación SHA2) para ver lo imposible que es acertar.</p><div class="stamp-zone"></div>`;
+            <p class="small muted"><b>Copia el script, pégalo en PowerShell y pulsa Intro.</b> El ordenador prueba números uno a uno (0, 1, 2…) hasta que el hash empieza por <code>${C.MINING_PREFIX}</code>. Así funciona un hash: no se puede adivinar, solo probar.</p><div class="stamp-zone"></div>`;
           answer(b, { label: "Número que consigue el sello", placeholder: "p. ej. 1234", btn: "Sellar", check: async (v) => {
             if (await CN.checkMining(D, v.trim())) { const h = await CN.sha256(D.mineText(v.trim())); $(".stamp-zone", b).innerHTML = `<div class="stamp">SELLADO</div><p class="mono small">${h}</p>`; a.complete("sello", "Transferencia sellada"); Snd.door(); return true; }
             a.fail(`Con ese número el hash no empieza por ${C.MINING_PREFIX}`); return false; } });
@@ -437,10 +451,10 @@
     /* ---------------- SALA 7 ---------------- */
     {
       id: "despacho", short: "Despacho", title: "El despacho del director", scene: "despacho", keyword: "SIMÉTRICO",
-      intro: "Despacho del director. Su ordenador guarda un correo cifrado con AES-256 que explica cómo abrir la caja fuerte. Según el procedimiento interno, la clave es el SHA-256 del texto PIN:GRUPO… ¿recuerdas el PIN del rack?",
+      intro: "Despacho del director. Su ordenador guarda un correo cifrado con AES que explica cómo abrir la caja fuerte. El director usa el mismo PIN para todo… ¿recuerdas el PIN del armario de servidores?",
       hints: [
-        "El PIN es el de la sala 2 (está en la nota del inventario). El texto queda PIN:GRUPO, sin espacios. Su SHA-256 (64 caracteres) es la clave.",
-        "CyberChef → AES Decrypt. Key: HEX · IV: HEX · Mode: CBC · Input: Hex · Output: Raw. Luego gira el dial en el orden que diga el mensaje y pulsa «Fijar» en cada número.",
+        "El PIN es el de la sala 2 (sale de la nota en Base64 del inventario).",
+        "CyberChef → AES Decrypt. Key e IV en UTF8 · Mode CBC · Input Hex · Output Raw. Luego gira el dial en el orden que diga el mensaje y pulsa «Fijar» en cada número.",
       ],
       lesson: "Has descifrado con <b>la misma clave</b> con la que se cifró: eso es <b>cifrado simétrico</b>. Es muy rápido, pero obliga a hacer llegar la clave al destinatario de forma segura. HTTPS lo resuelve usando asimétrico para intercambiar la clave y simétrico para los datos.",
       objectives: [
@@ -450,11 +464,11 @@
       hotspots: [
         { id: "pc", x: 255, y: 145, w: 160, h: 120, label: "Ordenador", done: (a) => a.done("pc"), open: (a) => openWin("Ordenador del director", (b) => {
           const mail = () => {
-            b.innerHTML = `<div class="mail"><div class="mail-head"><b>De:</b> seguridad@cited.example · <b>Asunto:</b> Caja fuerte (AES-256-CBC)</div><div class="hashbox"><span>IV (HEX)</span><code>${D.ivHex}</code></div><div class="hashbox"><span>MENSAJE CIFRADO (HEX)</span><code class="wrap">${D.cipherHex}</code></div></div><ol class="howto"><li>${CHEF} → operación <b>AES Decrypt</b>.</li><li><b>Key</b>: la clave que acabas de usar, tipo HEX · <b>IV</b>: el de arriba, tipo HEX.</li><li><b>Mode</b>: CBC · <b>Input</b>: Hex · <b>Output</b>: Raw.</li><li>Pega el mensaje cifrado en <b>Input</b>.</li></ol>`;
+            b.innerHTML = `<div class="mail"><div class="mail-head"><b>De:</b> seguridad@cited.example · <b>Asunto:</b> Caja fuerte</div><p>Te mando las instrucciones de la caja cifradas con <b>AES-128 CBC</b>, como siempre. La clave ya la sabes: <b>CITEDPIN</b> + el PIN del armario + el código del equipo.</p><div class="hashbox"><span>IV (texto)</span><code>${D.ivText}</code></div><div class="hashbox"><span>MENSAJE CIFRADO (HEX)</span><code class="wrap">${D.cipherHex}</code></div></div><ol class="howto"><li>Abre ${CHEF} → operación <b>AES Decrypt</b>. Es lo mismo que el reto de clase.</li><li><b>Key</b>: la clave en texto, tipo <b>UTF8</b>. Tiene 16 caracteres con este formato: <code>CITEDPIN0000${D.code}</code> (cambia 0000 por el PIN).</li><li><b>IV</b>: <code>${D.ivText}</code>, tipo <b>UTF8</b>.</li><li><b>Mode</b>: CBC · <b>Input</b>: Hex · <b>Output</b>: Raw.</li><li>Pega el mensaje cifrado en la caja <b>Input</b>.</li></ol>`;
           };
           if (a.done("pc")) return mail();
-          b.innerHTML = `<div class="login"><div class="login-ava">👤</div><b>Dirección · CITED Data</b><p class="small">Introduce la clave AES-256 (64 caracteres hexadecimales).</p></div><p>Procedimiento: clave = SHA-256 del texto <code>PIN:${D.code}</code></p>${cmd(`$s = "PIN:${D.code}"   # cambia PIN por el número de 4 cifras\n-join ([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($s)) | ForEach-Object { $_.ToString("x2") })`)}`;
-          answer(b, { label: "Clave AES (64 hex)", placeholder: "64 caracteres", btn: "Entrar", check: async (v) => { if (hexIn(v) === D.keyHex) { a.complete("pc", "Sesión iniciada"); mail(); return true; } a.fail("Clave incorrecta"); return false; } });
+          b.innerHTML = `<div class="login"><div class="login-ava">👤</div><b>Dirección · CITED Data</b><p class="small">El director usa el mismo PIN que el armario de servidores.</p></div>`;
+          keypad(b, { len: 4, label: "PIN", onSubmit: async (v) => { if (v === D.pin) { a.complete("pc", "Sesión iniciada"); setTimeout(mail, 700); return true; } a.fail("PIN incorrecto"); return false; } });
         }, { icon: "💻", wide: true }) },
         { id: "safe", x: 555, y: 100, w: 200, h: 200, label: "Caja fuerte", show: (a) => a.done("pc"), done: (a) => a.done("caja"), open: (a) => openWin("Caja fuerte", (b, close) => dial(b, async (seq) => {
           const ok = seq.length === 3 && seq.every((s, i) => s.n === D.dial[i] && s.dir === D.dialDirs[i]);
@@ -466,16 +480,16 @@
     /* ---------------- SALA 8 ---------------- */
     {
       id: "camara", short: "Cámara", title: "La cámara acorazada", scene: "camara", keyword: "RECUPERACIÓN",
-      intro: "La cámara acorazada se abre con DOS llaves. Para sacar el disco del edificio hay que meterlo en un paquete cifrado con 7-Zip. Llave 1: el testigo del paquete. Llave 2: la prueba de que el paquete está realmente cifrado.",
+      intro: "La cámara acorazada se abre con DOS llaves. Para sacar el disco del edificio hay que meterlo en un paquete cifrado con 7-Zip. Llave 1: el testigo del paquete. Llave 2: su tamaño, que solo se ve abriendo el paquete con la contraseña.",
       hints: [
         "7-Zip: clic derecho en la carpeta → 7-Zip → Añadir al archivo… → Formato 7z, AES-256, contraseña y «Cifrar nombres de archivo».",
-        "Llave 2: abre vuestro .7z con 7-Zip (os pedirá la contraseña). En la lista verás el tamaño del testigo; en la columna Método (o con 7z l -slt) aparece el cifrado.",
+        "Llave 2: abre vuestro .7z con 7-Zip, escribe la contraseña y mira la columna Tamaño del testigo.",
       ],
       lesson: "Sin la contraseña el paquete es ilegible, y con «cifrar nombres» ni siquiera se ve qué contiene. La <b>clave</b> es lo único que permite recuperar los datos: si se pierde, se pierde todo; si se filtra, se filtra todo.",
       objectives: [
         { key: "kit", label: "Prepara el paquete cifrado con 7-Zip" },
         { key: "k1", label: "Llave 1: el testigo" },
-        { key: "k2", label: "Llave 2: demuestra que el paquete está cifrado" },
+        { key: "k2", label: "Llave 2: el tamaño del testigo" },
       ],
       hotspots: [
         { id: "kit", x: 40, y: 190, w: 225, h: 90, label: "Kit de transporte", done: (a) => a.done("kit"), open: (a) => openWin("Kit de transporte seguro", (b) => {
@@ -494,17 +508,10 @@
           b.innerHTML = `<p>Abre el paquete <b>con la contraseña</b> y lee el valor TESTIGO de <code>testigo_${D.code}.txt</code>.</p>`;
           answer(b, { label: "Testigo", placeholder: "6 caracteres", btn: "Girar llave", check: async (v) => { if (norm(v) === D.token) { a.complete("k1", "Llave 1 girada"); setTimeout(close, 600); return true; } a.fail("Ese no es el testigo"); return false; } });
         }, { icon: "🗝️" }) },
-        { id: "k2", x: 698, y: 208, w: 75, h: 78, label: "Llave 2", show: (a) => a.done("k1"), done: (a) => a.done("k2"), open: (a) => openWin("Llave 2 · inspección del paquete", (b, close) => {
-          b.innerHTML = `<p>La cámara quiere pruebas de que el paquete está cifrado. Ábrelo en 7-Zip (con la contraseña) y mira la fila del archivo testigo: columnas <b>Tamaño</b> (bytes) y <b>Método</b>. Si no ves la columna Método, clic derecho sobre las cabeceras → márcala. También puedes usar la consola, en la carpeta del .7z:</p>${cmd(`& "C:\\Program Files\\7-Zip\\7z.exe" l -slt .\\CONFIDENCIAL.7z`)}<p class="small muted">Te pedirá la contraseña. En la consola busca las líneas <code>Path = …testigo…</code>, <code>Size</code> y <code>Method</code>.</p><form class="answer two" novalidate><label><span>Tamaño del testigo (bytes)</span><input class="mono" inputmode="numeric" placeholder="p. ej. 120"></label><label><span>Método (tal cual aparece)</span><input class="mono" placeholder="p. ej. LZMA2:12 …"></label><button class="btn" type="submit">Girar llave</button></form>`;
-          $("form", b).onsubmit = async (e) => {
-            e.preventDefault();
-            const [is, im] = $$("input", b), size = +is.value.replace(/\D/g, ""), method = im.value.toUpperCase();
-            if (!size || !method) return toast("Rellena los dos campos", "info");
-            if (size !== D.testigoSize) return a.fail("Ese no es el tamaño del testigo del paquete");
-            if (!method.includes("7ZAES")) return a.fail("Ese método no incluye cifrado AES: ¿activaste la contraseña?");
-            a.complete("k2", "Llave 2 girada"); setTimeout(close, 600);
-          };
-        }, { icon: "🗝️", wide: true }) },
+        { id: "k2", x: 698, y: 208, w: 75, h: 78, label: "Llave 2", show: (a) => a.done("k1"), done: (a) => a.done("k2"), open: (a) => openWin("Llave 2 · el paquete", (b, close) => {
+          b.innerHTML = `<p>Abre vuestro <code>.7z</code> con 7-Zip (doble clic) y escribe la contraseña. En la lista aparece <code>testigo_${D.code}.txt</code> con su <b>Tamaño</b> en bytes.</p><p class="small muted">Si «Cifrar nombres» está activado, sin la contraseña ni siquiera se ve la lista.</p>`;
+          answer(b, { label: "Tamaño del testigo (bytes)", placeholder: "p. ej. 120", btn: "Girar llave", check: async (v) => { if (+v.replace(/\D/g, "") === D.testigoSize) { a.complete("k2", "Llave 2 girada"); setTimeout(close, 600); return true; } a.fail("Ese no es el tamaño del testigo"); return false; } });
+        }, { icon: "🗝️" }) },
       ],
     },
     /* ---------------- SALA 9 ---------------- */
@@ -920,7 +927,7 @@
         <span class="eyebrow">MISIÓN COMPLETADA</span>
         <h1>SISTEMA <span class="hl">RECUPERADO</span></h1>
         <div class="stats"><div><span>SALAS</span><b>${S.completed.length}/${ROOMS.length}</b></div><div><span>PUNTOS</span><b>${S.score}</b></div><div><span>PISTAS</span><b>${S.hintsUsed}</b></div><div><span>ERRORES</span><b>${S.totalErrors}</b></div></div>
-        <div class="achieved"><b>Habéis conseguido:</b><ul><li>demostrar que una contraseña de Windows no cifra un disco</li><li>leer una nota «cifrada» que solo estaba codificada</li><li>descifrar con RSA usando la clave privada correcta</li><li>detectar manipulaciones invisibles con SHA-256</li><li>sellar una transferencia probando miles de hashes</li><li>verificar copias y diseñar un plan 3-2-1</li><li>descifrar AES-256 y abrir una caja fuerte</li><li>proteger datos con 7-Zip y AES-256</li></ul></div>
+        <div class="achieved"><b>Habéis conseguido:</b><ul><li>demostrar que una contraseña de Windows no cifra un disco</li><li>leer una nota «cifrada» que solo estaba codificada</li><li>descifrar con RSA eligiendo la clave privada correcta</li><li>detectar manipulaciones invisibles con SHA-256</li><li>sellar una transferencia probando cientos de hashes</li><li>verificar copias y diseñar un plan 3-2-1</li><li>descifrar AES y abrir una caja fuerte</li><li>proteger datos con 7-Zip y AES-256</li></ul></div>
         <div class="kw-list">${S.keywords.map((k) => `<span>${k}</span>`).join("")}</div>
         <div class="summary"><div><b>Confidencialidad</b> → cifrado</div><div><b>Integridad</b> → hash</div><div><b>Disponibilidad</b> → copias</div><div><b>Autenticidad</b> → firma</div></div>
         <div class="finish-code"><span>CÓDIGO DE FINALIZACIÓN · entrégalo al profesor para el ranking</span>${cmd(code, "Equipo " + esc(S.team) + " · " + S.groupCode)}</div>

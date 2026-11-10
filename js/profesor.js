@@ -78,12 +78,12 @@
       $("#out").innerHTML = `<div class="sol">
         ${item("SALA 1 · Oficina", `Abrir D: y E: en el portátil · nota en D:\\Personal · Código de la puerta: <code>${d.badge}</code> (tarjeta de ${esc(d.badgeOwner)}, Logística más antiguo)`)}
         ${item("SALA 2 · Servidores", `PIN del rack (Base64): <code>${d.pin}</code> · luego clic en el llavero USB`)}
-        ${item("SALA 3 · Carlos", `Descifrar con <b>carlos_privada.pem</b> (CyberChef: From Base64 → RSA Decrypt, RSA-OAEP, SHA-1) · Combinación: <code>${d.combo.join("-")}</code> · Responder con <b>pública de Ana</b>`)}
+        ${item("SALA 3 · Carlos", `Recoger la carta del buzón · en el descifrador elegir <b>carlos_privada.pem</b> · Combinación:<code>${d.combo.join("-")}</code> · Responder con <b>pública de Ana</b>`)}
         ${item("SALA 4 · Archivo", `Auténtico: <code>contrato_${d.authentic + 1}</code> · Huellas (8): ${d.contracts.map((c, i) => `${i + 1}=<code>${c.hash.slice(0, 8)}</code>`).join(" · ")} · hay que escanear los 4`)}
         ${item("SALA 5 · Laboratorio", `A: <code>${d.msg1Hash}</code><br>B: <code>${d.msg2Hash}</code><br>Sello: número <code>${nonce}</code> (vale cualquier número cuyo hash empiece por ${CN.CONFIG.MINING_PREFIX})`)}
         ${item("SALA 6 · Copias", `Corrupta: <code>${d.corruptName}</code> · su hash real (8): <code>${corruptHash}</code> · Plan válido: p. ej. NAS + Cinta + Nube con 🔒`)}
-        ${item("SALA 7 · Despacho", `Texto: <code>${esc(d.keyText)}</code><br>Clave: <code>${d.keyHex}</code><br>Dial: Derecha ${d.dial[0]} → Izquierda ${d.dial[1]} → Derecha ${d.dial[2]}`)}
-        ${item("SALA 8 · Cámara", `Llave 1 (testigo): <code>${d.token}</code> · Llave 2: Size = <code>${d.testigoSize}</code> bytes y un Method que contenga <code>7zAES</code>`)}
+        ${item("SALA 7 · Despacho", `PIN del ordenador: <code>${d.pin}</code> · AES-128 CBC · Key (UTF8): <code>${esc(d.keyText)}</code> · IV (UTF8): <code>${esc(d.ivText)}</code><br>Dial:Derecha ${d.dial[0]} → Izquierda ${d.dial[1]} → Derecha ${d.dial[2]}`)}
+        ${item("SALA 8 · Cámara", `Llave 1 (testigo): <code>${d.token}</code> · Llave 2: Tamaño = <code>${d.testigoSize}</code> bytes`)}
         ${item("SALA 9 · Salida", "C: BitLocker, AES, 7z, carta RSA · I: verificador SHA-256, SHA256SUMS · D: plan 3-2-1 · A: firma de Ana · Papelera: Base64, ocultos")}
       </div>`;
     };

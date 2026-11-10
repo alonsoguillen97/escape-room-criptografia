@@ -13,7 +13,7 @@
     PENALTY_HINT: 50,
     BONUS_CLEAN: 50,
     START_SCORE: 1000,
-    MINING_PREFIX: "000",             // sala 5: el hash debe empezar así
+    MINING_PREFIX: "00",             // sala 5: el hash debe empezar así
   };
 
   const enc = new TextEncoder();
@@ -162,15 +162,14 @@
     d.manifest = manifest.join("\r\n") + "\r\n";
     d.corruptName = bnames[d.corrupt];
 
-    /* SALA 7 · Despacho: AES-256 → combinación del dial */
-    d.keyText = `${d.pin}:${code}`;
-    d.keyHex = await sha256(d.keyText);
-    const iv = new Uint8Array(16).map(() => r.int(0, 255));
-    d.ivHex = toHex(iv);
+    /* SALA 7 · Despacho: AES-128 CBC con clave e IV en texto (como el reto de clase) */
+    d.keyText = `CITEDPIN${d.pin}${code}`;          // 8 + 4 + 4 = 16 caracteres
+    d.ivText = `CAJA-FUERTE-${code}`;              // 12 + 4 = 16 caracteres
+    const iv = enc.encode(d.ivText);
     d.dial = [r.int(5, 39), r.int(5, 39), r.int(5, 39)];
     d.dialDirs = ["D", "I", "D"];
     const plain = `GRUPO ${code} :: CAJA FUERTE DEL DIRECTOR :: gira a la DERECHA hasta ${d.dial[0]}, luego a la IZQUIERDA hasta ${d.dial[1]} y por ultimo a la DERECHA hasta ${d.dial[2]}.`;
-    const key = await crypto.subtle.importKey("raw", fromHex(d.keyHex), { name: "AES-CBC" }, false, ["encrypt"]);
+    const key = await crypto.subtle.importKey("raw", enc.encode(d.keyText), { name: "AES-CBC" }, false, ["encrypt"]);
     d.cipherHex = toHex(new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", iv }, key, enc.encode(plain))));
 
     /* SALA 8 · Cámara: testigo dentro del .7z (longitud variable por grupo) */
@@ -195,6 +194,13 @@
       anaPub: pem(await crypto.subtle.exportKey("spki", a.publicKey), "PUBLIC KEY"),
       cipherB64: toB64(ct),
     };
+  }
+
+  async function rsaDecrypt(privPem, cipherB64) {
+    const der = Uint8Array.from(atob(privPem.replace(/-----[^-]+-----|\s/g, "")), (c) => c.charCodeAt(0));
+    const key = await crypto.subtle.importKey("pkcs8", der, { name: "RSA-OAEP", hash: "SHA-1" }, false, ["decrypt"]);
+    const ct = Uint8Array.from(atob(cipherB64), (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "RSA-OAEP" }, key, ct));
   }
 
   /* ---------- Sala 5: sellado ---------- */
@@ -252,5 +258,5 @@
     return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
   }
 
-  global.CN = { CONFIG, sha256, rng, generateGroupCode, deriveGroup, token, makeRSA, checkMining, firstNonce, makeFinishCode, parseFinishCode, makeSave, readSave, fmtTime };
+  global.CN = { CONFIG, sha256, rng, generateGroupCode, deriveGroup, token, makeRSA, rsaDecrypt, checkMining, firstNonce, makeFinishCode, parseFinishCode, makeSave, readSave, fmtTime };
 })(window);

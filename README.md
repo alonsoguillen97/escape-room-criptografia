@@ -27,15 +27,15 @@ Cada sala es una escena ilustrada con objetos clicables, objetivos, radio con me
 |---|------|----------|------------------|
 | 1 | Oficina | Explorador de archivos del SSD robado (D: legible, E: BitLocker). Deducir el código de la puerta desde un CSV | — |
 | 2 | Servidores | Descodificar la nota Base64 → teclado del rack | PowerShell / CyberChef |
-| 3 | Despacho de Carlos | Descifrar una carta **RSA real** eligiendo la clave correcta del llavero → candado de ruedas → responder con la clave adecuada | CyberChef (RSA Decrypt) |
+| 3 | Despacho de Carlos | Carta cifrada con **RSA real**: elegir en el descifrador del juego qué clave del llavero la abre → candado de ruedas → responder con la clave adecuada | Bloc de notas (.pem) |
 | 4 | Archivo | Verificador: escanear los 4 contratos declarando su hash; detectar el auténtico y 3 evidencias | Get-FileHash |
-| 5 | Laboratorio | Efecto avalancha visual + **selladora**: buscar por fuerza bruta un número cuyo hash empiece por 000 | PowerShell (bucle) |
+| 5 | Laboratorio | Efecto avalancha visual + **selladora**: script de PowerShell (copiar y pegar) que busca un número cuyo hash empiece por 00 | PowerShell |
 | 6 | Copias | Bloquear la copia corrupta con manifiesto SHA256SUMS + diseñar un plan 3-2-1 con copias externas cifradas | Get-FileHash |
-| 7 | Despacho del director | Clave = SHA-256("PIN:GRUPO") → descifrar AES-256 → dial de caja fuerte (sentido y número) | PowerShell + CyberChef |
-| 8 | Cámara acorazada | Cifrar su propio paquete con 7-Zip; llave 1 = testigo, llave 2 = tamaño exacto del testigo y método `7zAES` leídos en 7-Zip | 7-Zip |
+| 7 | Despacho del director | PIN de la sala 2 → correo cifrado con AES-128 CBC (clave e IV en texto, como el reto de clase) → dial de caja fuerte | CyberChef |
+| 8 | Cámara acorazada | Cifrar su propio paquete con 7-Zip; llave 1 = testigo, llave 2 = tamaño del testigo visto en 7-Zip | 7-Zip |
 | 9 | Salida | Clasificar las medidas usadas en C / I / D / A / no protege | — |
 
-Probado con CyberChef real (RSA-OAEP SHA-1 y AES-CBC) y PowerShell 5.1.
+Probado con CyberChef real (AES-CBC) y PowerShell 5.1. Los alumnos tienen apuntes de consulta en `apuntes.html` (botón 📘).
 
 ## Por qué la IA no lo resuelve sola
 - Cada grupo tiene un **código aleatorio** y de él dependen PIN, contratos, hashes, copias, clave AES y testigo. Ni otro grupo ni una IA conocen esos datos.

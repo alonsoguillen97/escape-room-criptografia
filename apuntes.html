@@ -151,18 +151,17 @@
     <nav class="toc" aria-label="Índice">
       <b>ÍNDICE</b>
       <ol>
-        <li><a href="#repaso">Repaso: cifrar</a></li>
+        <li><a href="#repaso">¿Qué es cifrar?</a></li>
         <li><a href="#codificar">Codificar no es cifrar</a></li>
-        <li><a href="#reposo">Datos en reposo</a></li>
-        <li><a href="#aes">AES en la práctica</a></li>
-        <li><a href="#asimetrico">Asimétrico en la práctica</a></li>
-        <li><a href="#hash">Hash e integridad</a></li>
-        <li><a href="#calcular">Calcular hashes</a></li>
-        <li><a href="#copias">Verificar copias</a></li>
+        <li><a href="#reposo">Proteger los datos guardados</a></li>
+        <li><a href="#aes">Cifrado simétrico: AES</a></li>
+        <li><a href="#asimetrico">Clave pública y privada</a></li>
+        <li><a href="#hash">El hash: la huella digital</a></li>
+        <li><a href="#calcular">Calcular un hash</a></li>
+        <li><a href="#copias">Comprobar copias</a></li>
         <li><a href="#7zip">Proteger con 7-Zip</a></li>
-        <li><a href="#principios">Principios de seguridad</a></li>
-        <li><a href="#herramientas">Caja de herramientas</a></li>
-        <li><a href="#glosario">Glosario</a></li>
+        <li><a href="#principios">¿Qué protege cada cosa?</a></li>
+        <li><a href="#herramientas">Chuleta de herramientas</a></li>
       </ol>
       <div class="actions"><button class="btn" type="button" onclick="window.print()">🖨️ Imprimir / PDF</button></div>
     </nav>
@@ -170,331 +169,241 @@
     <main>
       <!-- 1 -->
       <section class="unit" id="repaso">
-        <div class="unit-head"><span class="num">1</span><h2>Repaso: ¿qué es cifrar?</h2></div>
-        <p class="lead">El <b>cifrado</b> transforma información legible en información que no se puede interpretar sin disponer de la <b>clave</b>.</p>
-        <div class="tbl-wrap"><table>
-          <tr><th>Concepto</th><th>Significado</th><th>Ejemplo</th></tr>
-          <tr><td><b>Texto en claro</b></td><td>La información original</td><td><code>Transferencia: 1000 EUR</code></td></tr>
-          <tr><td><b>Algoritmo</b></td><td>El procedimiento que se aplica</td><td>AES, RSA</td></tr>
-          <tr><td><b>Clave</b></td><td>El valor secreto que controla el algoritmo</td><td><code>000102…0e0f</code></td></tr>
-          <tr><td><b>Texto cifrado</b></td><td>El resultado ilegible</td><td><code>1ef9a0d5da3e…</code></td></tr>
-        </table></div>
+        <div class="unit-head"><span class="num">1</span><h2>¿Qué es cifrar?</h2></div>
+        <p class="lead"><b>Cifrar</b> es convertir información en algo ilegible que solo puede volver a leer quien tiene la <b>clave</b>.</p>
         <div class="grid2">
-          <div class="card"><h4>🔑 Simétrico</h4><p>La <b>misma clave</b> cifra y descifra.</p><p>✔ Muy rápido · ✘ Hay que hacer llegar la clave al otro de forma segura.</p><p>Ejemplo: <b>AES</b>.</p></div>
-          <div class="card dark"><h4>🗝️🔑 Asimétrico</h4><p>Cada persona tiene un <b>par de claves</b>: pública y privada.</p><p>✔ No hay que compartir ningún secreto · ✘ Más lento.</p><p>Ejemplo: <b>RSA</b>.</p></div>
+          <div class="card"><h4>🔑 Cifrado simétrico</h4><p>Se usa <b>la misma clave</b> para cifrar y para descifrar.</p><p>Ejemplo: <b>AES</b>.</p></div>
+          <div class="card dark"><h4>🗝️ + 🔑 Cifrado asimétrico</h4><p>Cada persona tiene <b>dos claves</b>: una pública y una privada.</p><p>Ejemplo: <b>RSA</b>.</p></div>
         </div>
-        <div class="box tip"><b>RECUERDA</b><p>La seguridad no depende de que el algoritmo sea secreto (AES y RSA son públicos), sino de que la <b>clave</b> lo sea.</p></div>
+        <div class="box tip"><b>RECUERDA</b><p>Lo importante es que la <b>clave</b> sea secreta. Sin la clave, no se puede leer.</p></div>
       </section>
 
       <!-- 2 -->
       <section class="unit" id="codificar">
         <div class="unit-head"><span class="num">2</span><h2>Codificar no es cifrar</h2></div>
-        <div class="rooms"><span>SALA 2 · SERVIDORES</span></div>
-        <p class="lead">Mucha gente dice que algo está «cifrado en Base64». Está mal dicho: <b>Base64 no protege nada</b>.</p>
+        <div class="rooms"><span>SALA 2</span></div>
+        <p class="lead"><b>Codificar</b> es escribir lo mismo de otra forma. <b>No necesita clave</b> y cualquiera puede deshacerlo. Por eso <b>no protege nada</b>.</p>
         <div class="tbl-wrap"><table>
           <tr><th></th><th>Codificar</th><th>Cifrar</th></tr>
-          <tr><td><b>Objetivo</b></td><td>Representar los datos en otro formato</td><td>Que solo lo lea quien tenga la clave</td></tr>
           <tr><td><b>¿Necesita clave?</b></td><td>No</td><td>Sí</td></tr>
-          <tr><td><b>¿Cualquiera puede revertirlo?</b></td><td>Sí</td><td>No</td></tr>
-          <tr><td><b>Ejemplos</b></td><td>Base64, hexadecimal, ASCII</td><td>AES, RSA</td></tr>
+          <tr><td><b>¿Cualquiera lo deshace?</b></td><td>Sí</td><td>No</td></tr>
+          <tr><td><b>¿Protege?</b></td><td>❌ No</td><td>✅ Sí</td></tr>
+          <tr><td><b>Ejemplos</b></td><td>Base64</td><td>AES, RSA</td></tr>
         </table></div>
         <h3>Base64</h3>
-        <p>Convierte cualquier dato (también binario: imágenes, claves…) en texto «imprimible» usando 64 símbolos: <code>A–Z</code> <code>a–z</code> <code>0–9</code> <code>+</code> <code>/</code>. Si al final sobran huecos, se rellena con <code>=</code>.</p>
-        <div class="hash"><b>Hola 2SMR</b> → SG9sYSAyU01S<br><b>CITED</b> → Q0lURUQ=</div>
-        <p>Se usa para enviar binario como texto: adjuntos de correo, certificados, claves <code>.pem</code>…</p>
-        <div class="box tip"><b>CÓMO RECONOCERLO</b><p>Solo letras, números, <code>+</code> y <code>/</code>; longitud múltiplo de 4; muchas veces termina en <code>=</code> o <code>==</code>.</p></div>
-        <h3>Descodificar Base64</h3>
-        <div class="cmd"><div class="cmd-head"><span>POWERSHELL · TEXTO</span><button class="copy" type="button">Copiar</button></div><pre><code>[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("SG9sYSAyU01S"))</code></pre></div>
-        <div class="cmd"><div class="cmd-head"><span>POWERSHELL · ARCHIVO</span><button class="copy" type="button">Copiar</button></div><pre><code>$t = Get-Content .\archivo.txt -Raw
+        <p>Parece un texto secreto, pero no lo es:</p>
+        <div class="hash"><b>Hola 2SMR</b> → SG9sYSAyU01S</div>
+        <div class="box tip"><b>CÓMO RECONOCERLO</b><p>Letras, números, <code>+</code> y <code>/</code>. Muchas veces acaba en <code>=</code> o <code>==</code>.</p></div>
+        <h3>Cómo leerlo</h3>
+        <p><b>Opción fácil:</b> en <a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">CyberChef</a>, la operación <b>From Base64</b>.</p>
+        <p><b>Con PowerShell</b>, desde un archivo:</p>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>$t = Get-Content .\archivo.txt -Raw
 [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($t))</code></pre></div>
-        <p>En <b>CyberChef</b>: operación <b>From Base64</b>.</p>
-        <h3>Hexadecimal</h3>
-        <p>Otra codificación: cada byte se escribe con <b>2 caracteres</b> del <code>0</code> al <code>9</code> y de la <code>a</code> a la <code>f</code>.</p>
-        <div class="hash"><b>Hola</b> → 48 6f 6c 61 → 486f6c61</div>
-        <p>Las claves, los IV y los hashes casi siempre se escriben en hexadecimal.</p>
       </section>
 
       <!-- 3 -->
       <section class="unit" id="reposo">
-        <div class="unit-head"><span class="num">3</span><h2>Cifrado de datos en reposo</h2></div>
-        <div class="rooms"><span>SALA 1 · OFICINA</span></div>
-        <div class="def"><b>DATOS EN REPOSO</b>Datos almacenados: discos internos, discos externos, USB, NAS, copias de seguridad.</div>
-        <div class="box case"><b>CASO</b><p>Un comercial pierde su portátil en el tren. Tiene <b>contraseña de Windows</b>. Quien lo encuentra saca el disco y lo conecta a su ordenador. <b>¿Puede leer los archivos?</b></p><p><b>Sí.</b> La contraseña de Windows solo decide quién inicia sesión en ese Windows. El disco, en otro equipo, se lee entero.</p></div>
+        <div class="unit-head"><span class="num">3</span><h2>Proteger los datos guardados</h2></div>
+        <div class="rooms"><span>SALA 1</span></div>
+        <div class="box case"><b>CASO</b><p>Pierdes un portátil con <b>contraseña de Windows</b>. Alguien saca el disco y lo conecta a otro ordenador. <b>¿Puede leer tus archivos?</b></p><p><b>Sí.</b> La contraseña de Windows solo sirve para entrar en ese Windows. <b>No cifra el disco.</b></p></div>
         <div class="tbl-wrap"><table>
-          <tr><th>Situación</th><th>Solo contraseña de Windows</th><th>Disco cifrado</th></tr>
-          <tr><td>Alguien intenta iniciar sesión</td><td>🔒 No entra</td><td>🔒 No entra</td></tr>
-          <tr><td>Saca el disco y lo conecta a otro PC</td><td>🔓 <b>Lee todo</b></td><td>🔒 Datos ilegibles</td></tr>
-          <tr><td>Arranca el equipo desde un USB</td><td>🔓 <b>Lee todo</b></td><td>🔒 Datos ilegibles</td></tr>
+          <tr><th>Si alguien…</th><th>Solo contraseña de Windows</th><th>Disco cifrado</th></tr>
+          <tr><td>intenta iniciar sesión</td><td>🔒 No entra</td><td>🔒 No entra</td></tr>
+          <tr><td>conecta el disco a otro PC</td><td>🔓 <b>Lo lee todo</b></td><td>🔒 No puede leer nada</td></tr>
         </table></div>
-        <h3>Herramientas</h3>
+        <h3>Herramientas para cifrar lo que guardas</h3>
         <div class="tbl-wrap"><table>
-          <tr><th>Herramienta</th><th>Qué cifra</th><th>Notas</th></tr>
-          <tr><td><b>BitLocker</b></td><td>La unidad completa de Windows</td><td>Windows Pro/Enterprise. Genera una <b>clave de recuperación</b> de 48 dígitos.</td></tr>
-          <tr><td><b>BitLocker To Go</b></td><td>USB y discos externos</td><td>Se desbloquean con contraseña al conectarlos.</td></tr>
-          <tr><td><b>VeraCrypt</b></td><td>Unidades completas o «contenedores» (un archivo que se monta como disco)</td><td>Libre, gratuito y multiplataforma.</td></tr>
-          <tr><td><b>7-Zip (AES-256)</b></td><td>Archivos o carpetas concretas</td><td>Ideal para enviar o transportar datos. Ver <a href="#7zip">apartado 9</a>.</td></tr>
+          <tr><th>Herramienta</th><th>Para qué</th></tr>
+          <tr><td><b>BitLocker</b></td><td>Cifrar el disco entero de Windows.</td></tr>
+          <tr><td><b>BitLocker To Go</b></td><td>Cifrar un USB o un disco externo.</td></tr>
+          <tr><td><b>VeraCrypt</b></td><td>Programa gratuito para cifrar discos o crear «cajas fuertes» (contenedores).</td></tr>
+          <tr><td><b>7-Zip</b></td><td>Cifrar unos archivos concretos para enviarlos o llevarlos.</td></tr>
         </table></div>
-        <div class="box warn"><b>OJO</b><p>Si se pierde la clave (o la clave de recuperación de BitLocker), <b>se pierden los datos</b>. No hay «puerta trasera». Las claves de recuperación se guardan en un lugar seguro, separado del equipo.</p></div>
-        <div class="box tip"><b>TAMPOCO PROTEGEN</b><p>Marcar archivos como «ocultos», cambiar la extensión, comprimir sin contraseña o esconder carpetas. Solo despistan.</p></div>
+        <div class="box warn"><b>OJO</b><p>Si pierdes la clave, <b>pierdes los datos</b>. Guárdala en un sitio seguro.</p><p>Ocultar archivos o cambiarles la extensión <b>no protege nada</b>.</p></div>
       </section>
 
       <!-- 4 -->
       <section class="unit" id="aes">
-        <div class="unit-head"><span class="num">4</span><h2>Cifrado simétrico: AES en la práctica</h2></div>
-        <div class="rooms"><span>SALA 7 · DESPACHO</span></div>
-        <p class="lead"><b>AES</b> (Advanced Encryption Standard) es el cifrado simétrico más usado: BitLocker, 7-Zip, Wi-Fi WPA2/WPA3, HTTPS…</p>
-        <h3>Los ingredientes</h3>
+        <div class="unit-head"><span class="num">4</span><h2>Cifrado simétrico: AES</h2></div>
+        <div class="rooms"><span>SALA 7</span></div>
+        <p class="lead"><b>AES</b> es el cifrado más usado del mundo (BitLocker, 7-Zip, el Wi-Fi…). Es <b>simétrico</b>: con la misma clave se cifra y se descifra.</p>
+        <h3>Qué necesitas para descifrar</h3>
         <div class="tbl-wrap"><table>
-          <tr><th>Ingrediente</th><th>Qué es</th><th>¿Es secreto?</th></tr>
-          <tr><td>🔑 <b>Clave</b></td><td>AES-128 → 16 bytes · AES-256 → 32 bytes</td><td><b>Sí</b></td></tr>
-          <tr><td>🎲 <b>IV</b> (vector de inicialización)</td><td>16 bytes aleatorios. Hace que el mismo texto cifrado dos veces dé resultados distintos.</td><td>No: viaja junto al mensaje</td></tr>
-          <tr><td>⚙️ <b>Modo</b></td><td>Cómo se encadenan los bloques: CBC, GCM, CTR…</td><td>No</td></tr>
-          <tr><td>📄 <b>Texto cifrado</b></td><td>El resultado</td><td>No</td></tr>
+          <tr><th>Dato</th><th>Qué es</th></tr>
+          <tr><td>🔑 <b>Clave</b></td><td>El secreto. En AES-128 mide <b>16 caracteres</b>.</td></tr>
+          <tr><td>🎲 <b>IV</b></td><td>Un valor extra que acompaña al mensaje. También 16 caracteres. <b>No es secreto.</b></td></tr>
+          <tr><td>⚙️ <b>Modo</b></td><td>Por ejemplo <b>CBC</b>. Te lo dirán.</td></tr>
+          <tr><td>📄 <b>Mensaje cifrado</b></td><td>Normalmente en hexadecimal (números y letras de la a a la f).</td></tr>
         </table></div>
-        <p>Para descifrar hay que tener <b>todos</b> los ingredientes correctos. Si falla uno solo, sale basura o un error.</p>
-        <h3>Tamaños en hexadecimal</h3>
-        <p>Como cada byte son 2 caracteres hex:</p>
-        <div class="grid2">
-          <div class="card"><h4>AES-128</h4><p>16 bytes → <b>32 caracteres</b> hex</p></div>
-          <div class="card dark"><h4>AES-256</h4><p>32 bytes → <b>64 caracteres</b> hex</p></div>
-        </div>
-        <div class="box tip"><b>TRUCO</b><p>Una clave también puede darse como texto (UTF-8): <code>CITED2026AULA123</code> son 16 caracteres = 16 bytes → vale como clave o IV de AES-128.</p></div>
-        <h3>Descifrar AES con CyberChef</h3>
+        <h3>Descifrar en CyberChef (igual que el reto de clase)</h3>
         <ol class="steps">
-          <li><span>Abre <a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">CyberChef</a> y arrastra la operación <b>AES Decrypt</b> a la receta.</span></li>
-          <li><span><b>Key</b>: pega la clave y elige su tipo (<b>HEX</b> si son caracteres 0-9 a-f; <b>UTF8</b> si es texto normal).</span></li>
-          <li><span><b>IV</b>: igual, con su tipo.</span></li>
-          <li><span><b>Mode</b>: el que se usó (por ejemplo <b>CBC</b>).</span></li>
-          <li><span><b>Input</b>: <b>Hex</b> si el texto cifrado viene en hexadecimal · <b>Output</b>: <b>Raw</b>.</span></li>
-          <li><span>Pega el texto cifrado en la caja <b>Input</b> (arriba a la derecha).</span></li>
+          <li><span>Abre <a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">CyberChef</a> y busca la operación <b>AES Decrypt</b>. Arrástrala a la receta.</span></li>
+          <li><span><b>Key</b>: escribe la clave y cambia el tipo a <b>UTF8</b>.</span></li>
+          <li><span><b>IV</b>: escribe el IV y cambia el tipo a <b>UTF8</b>.</span></li>
+          <li><span><b>Mode</b>: CBC · <b>Input</b>: Hex · <b>Output</b>: Raw.</span></li>
+          <li><span>Pega el mensaje cifrado en la caja <b>Input</b>.</span></li>
         </ol>
-        <div class="box case"><b>PRACTICA</b><p>AES-128-CBC · Key (HEX): <code>000102030405060708090a0b0c0d0e0f</code> · IV (HEX): <code>a1a2a3a4a5a6a7a8a9aaabacadaeafb0</code></p>
-          <div class="hash">1ef9a0d5da3e917c985da857af682a8ac4a2018b706912c8cd1413f0270d70fda1d48714dc63433857eed78a69c5739d</div>
-          <p>Si lo haces bien, leerás una frase que empieza por «Apuntes».</p></div>
-        <div class="box warn"><b>ERRORES TÍPICOS</b><p>• <i>Invalid key length</i> → la clave no mide 16/24/32 bytes o has puesto UTF8 en vez de HEX.<br>• Sale texto raro → IV, modo o clave incorrectos.<br>• No sale nada → revisa que <b>Input</b> esté en Hex.</p></div>
-        <h3>¿Y si mi clave es una contraseña?</h3>
-        <p>Una contraseña como <code>1234</code> no mide 32 bytes. Una forma de convertirla en clave AES-256 es calcular su <b>SHA-256</b> (ver <a href="#hash">apartado 6</a>): el resultado siempre mide 32 bytes = 64 caracteres hex.</p>
-        <div class="hash"><b>SHA-256("1234")</b> = 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4</div>
-        <p class="muted">Los programas profesionales usan funciones más lentas pensadas para esto (PBKDF2, Argon2), pero la idea es la misma.</p>
+        <div class="box case"><b>PRACTICA</b><p>Key: <code>CLAVEDEPRUEBA123</code> · IV: <code>VECTOR2SMR-CITED</code> · AES-128 CBC</p>
+          <div class="hash">b1d6a1e7e2bc1869bf1265232a35b25fb11e80d67c6cc775bce164b16f4342409e55857ced27a701a0d3a3089210ff3e</div>
+          <p>Si lo haces bien, aparece un mensaje que empieza por «Bien hecho».</p></div>
+        <div class="box warn"><b>SI NO FUNCIONA</b><p>• ¿Key e IV están en <b>UTF8</b>?<br>• ¿La clave tiene exactamente <b>16 caracteres</b>?<br>• ¿Input está en <b>Hex</b>?</p></div>
       </section>
 
       <!-- 5 -->
       <section class="unit" id="asimetrico">
-        <div class="unit-head"><span class="num">5</span><h2>Cifrado asimétrico en la práctica</h2></div>
-        <div class="rooms"><span>SALA 3 · CARLOS</span><span>SALA 9 · SALIDA</span></div>
+        <div class="unit-head"><span class="num">5</span><h2>Clave pública y clave privada</h2></div>
+        <div class="rooms"><span>SALA 3</span><span>SALA 9</span></div>
         <div class="keys">
-          <div class="key pub"><span class="ico">🗝️</span><div><b>Clave pública</b>Se reparte a cualquiera. Sirve para <b>cifrar para ti</b> y para <b>verificar tus firmas</b>.</div></div>
-          <div class="key priv"><span class="ico">🔑</span><div><b>Clave privada</b>Solo la tienes tú. Sirve para <b>descifrar lo que te envían</b> y para <b>firmar</b>.</div></div>
+          <div class="key pub"><span class="ico">🗝️</span><div><b>Clave pública</b>La puedes dar a todo el mundo.</div></div>
+          <div class="key priv"><span class="ico">🔑</span><div><b>Clave privada</b>Solo la tienes tú. <b>Nunca</b> se comparte.</div></div>
         </div>
-        <h3>¿Quién usa cada clave?</h3>
+        <p class="lead">Funcionan en pareja: lo que se cierra con una, se abre con la otra.</p>
+        <h3>¿Qué clave uso?</h3>
         <div class="tbl-wrap"><table>
-          <tr><th>Quiero…</th><th>Uso la clave…</th></tr>
-          <tr><td>Enviar algo <b>secreto</b> a Carlos</td><td><b>pública de Carlos</b></td></tr>
-          <tr><td>Que Carlos lea lo que le han enviado</td><td><b>privada de Carlos</b></td></tr>
-          <tr><td><b>Firmar</b> un documento (demostrar que soy yo)</td><td><b>mi privada</b></td></tr>
-          <tr><td>Comprobar la firma de Ana</td><td><b>pública de Ana</b></td></tr>
+          <tr><th>Quiero…</th><th>Uso…</th></tr>
+          <tr><td>Enviar un secreto a Carlos</td><td>🗝️ la <b>pública de Carlos</b></td></tr>
+          <tr><td>Que Carlos lo lea</td><td>🔑 la <b>privada de Carlos</b></td></tr>
+          <tr><td><b>Firmar</b> un documento</td><td>🔑 <b>mi privada</b></td></tr>
+          <tr><td>Comprobar la firma de Ana</td><td>🗝️ la <b>pública de Ana</b></td></tr>
         </table></div>
-        <div class="def"><b>REGLA RÁPIDA</b>Cifrar → la <b>pública del destinatario</b>. Firmar → <b>mi privada</b>.</div>
-        <div class="box warn"><b>OJO</b><p>Lo que se cifra con la clave pública de alguien <b>no lo puede descifrar ni quien lo cifró</b>: solo el dueño de la privada. Y tener la clave pública de otra persona no permite leer sus mensajes.</p></div>
-        <h3>Las claves son archivos: formato PEM</h3>
-        <div class="cmd"><div class="cmd-head"><span>carlos_publica.pem</span></div><pre><code>-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA+fmklneUcBj+6YrNZ9Kp
-... (varias líneas en Base64) ...
------END PUBLIC KEY-----</code></pre></div>
-        <p>• <code>BEGIN PUBLIC KEY</code> → se puede compartir. • <code>BEGIN PRIVATE KEY</code> → <b>nunca sale de tu equipo</b>.<br>Se abren con el Bloc de notas. Por dentro están en… Base64.</p>
-        <h3>Descifrar RSA con CyberChef</h3>
-        <ol class="steps">
-          <li><span>Si el mensaje cifrado viene en Base64, primero la operación <b>From Base64</b>.</span></li>
-          <li><span>Debajo, la operación <b>RSA Decrypt</b>.</span></li>
-          <li><span>En <b>RSA Private Key (PEM)</b> pega la clave <b>completa</b>, incluidas las líneas <code>-----BEGIN…</code> y <code>-----END…</code>.</span></li>
-          <li><span>Elige el <b>Encryption Scheme</b> y el <b>Message Digest</b> que se usaron al cifrar (por ejemplo RSA-OAEP y SHA-1).</span></li>
-        </ol>
-        <p>Si eliges una clave que no corresponde, CyberChef da error: es la prueba de que solo una clave sirve.</p>
-        <h3>Firma digital</h3>
-        <p>La firma <b>no oculta</b> el contenido. Demuestra dos cosas:</p>
+        <div class="def"><b>TRUCO PARA RECORDARLO</b>Cifrar → la <b>pública del que lo va a recibir</b>.<br>Firmar → <b>mi privada</b>.</div>
+        <h3>Las claves son archivos</h3>
+        <p>Se guardan en archivos <code>.pem</code> que se abren con el Bloc de notas. <b>La primera línea dice qué clave es:</b></p>
         <div class="grid2">
-          <div class="card"><h4>✍️ Autenticidad</h4><p>Lo firmó quien dice ser: solo él tiene su clave privada.</p></div>
-          <div class="card"><h4>🧾 Integridad</h4><p>Nadie lo modificó después de firmarlo.</p></div>
+          <div class="card"><h4>-----BEGIN PUBLIC KEY-----</h4><p>Clave pública. Se puede compartir.</p></div>
+          <div class="card dark"><h4>-----BEGIN PRIVATE KEY-----</h4><p>Clave privada. Nunca sale de tu equipo.</p></div>
         </div>
-        <p>Cómo funciona por dentro: se calcula el <b>hash</b> del documento y se cifra con la clave <b>privada</b> del firmante. Quien recibe recalcula el hash y lo compara con la firma usando la <b>pública</b>.</p>
-        <p>Ejemplos: DNI electrónico, certificado digital de la FNMT, facturas electrónicas, actualizaciones de Windows.</p>
-        <h3>En la vida real: los dos a la vez</h3>
-        <p><b>HTTPS</b> usa asimétrico para acordar una clave de sesión de forma segura y después <b>AES</b> (simétrico, rápido) para todos los datos. Se llama <b>cifrado híbrido</b>.</p>
+        <h3>Firma digital</h3>
+        <p>La firma <b>no oculta</b> el documento. Sirve para demostrar <b>quién lo ha firmado</b> y que <b>nadie lo ha cambiado</b> después. Ejemplos: el DNI electrónico o el certificado digital.</p>
       </section>
 
       <!-- 6 -->
       <section class="unit" id="hash">
-        <div class="unit-head"><span class="num">6</span><h2>Hash e integridad</h2></div>
-        <div class="rooms"><span>SALA 4 · ARCHIVO</span><span>SALA 5 · LABORATORIO</span><span>SALA 6 · COPIAS</span></div>
-        <div class="box case"><b>CASO</b><p>Recibimos un contrato: «Transferencia: 1000 EUR». Sospechamos que alguien lo ha cambiado por el camino, pero a simple vista parece correcto. <b>¿Cómo lo comprobamos?</b></p></div>
-        <div class="def"><b>FUNCIÓN HASH</b>Convierte cualquier dato, de cualquier tamaño, en una <b>huella</b> de tamaño fijo. Si el dato cambia, la huella cambia.</div>
-        <h3>Propiedades</h3>
-        <div class="tbl-wrap"><table>
-          <tr><th>Propiedad</th><th>Significado</th></tr>
-          <tr><td><b>Tamaño fijo</b></td><td>Un archivo de 1 byte o de 10 GB → SHA-256 siempre da <b>64 caracteres</b> hex (32 bytes).</td></tr>
-          <tr><td><b>Determinista</b></td><td>El mismo dato produce <b>siempre</b> el mismo hash, en cualquier ordenador.</td></tr>
-          <tr><td><b>Un solo sentido</b></td><td>Del hash <b>no</b> se puede obtener el dato original.</td></tr>
-          <tr><td><b>Efecto avalancha</b></td><td>Un cambio mínimo (una letra, un espacio) cambia el hash por completo.</td></tr>
-          <tr><td><b>Impredecible</b></td><td>No hay forma de saber qué hash saldrá sin calcularlo. Para conseguir un hash concreto solo queda <b>probar y probar</b>.</td></tr>
-        </table></div>
-        <h3>Efecto avalancha</h3>
+        <div class="unit-head"><span class="num">6</span><h2>El hash: la huella digital</h2></div>
+        <div class="rooms"><span>SALA 4</span><span>SALA 5</span><span>SALA 6</span></div>
+        <div class="def"><b>HASH</b>Es la «huella digital» de un archivo o un texto. Si el archivo cambia, aunque sea un espacio, la huella cambia.</div>
+        <p>El más usado es <b>SHA-256</b>: siempre da <b>64 caracteres</b>, sea el archivo grande o pequeño.</p>
+        <h3>Cuatro ideas clave</h3>
+        <div class="grid2">
+          <div class="card"><h4>📏 Siempre mide lo mismo</h4><p>64 caracteres, sea un texto de una letra o una película.</p></div>
+          <div class="card"><h4>🔁 Siempre sale igual</h4><p>El mismo archivo da siempre el mismo hash, en cualquier ordenador.</p></div>
+          <div class="card"><h4>🚫 No tiene vuelta atrás</h4><p>Con el hash <b>no</b> se puede sacar el texto original.</p></div>
+          <div class="card"><h4>💥 Un cambio lo cambia todo</h4><p>Cambiar una sola letra da un hash totalmente distinto. No se puede adivinar: <b>solo se puede probar</b>.</p></div>
+        </div>
+        <h3>Ejemplo</h3>
         <div class="hash"><b>hola</b> → b221d9dbb083a7f33428d7c2a3c3198ae925614d70210e28716ccaa7cd4ddb79</div>
         <div class="hash"><b>Hola</b> → e633f4fc79badea1dc5db970cf397c8248bac47cc3acf9915ba60b5d76b0e88f</div>
-        <div class="hash"><b>hola.</b> → 3b952738efe124f6b34181cb9e608432741ab05df195462dc98b26f50f9ef217</div>
-        <p>«Transferencia: 1000 EUR» y «Transferencia: 9000 EUR» solo coinciden en 3 de los 64 caracteres, que es lo que se espera por puro azar.</p>
-        <h3>Hash ≠ cifrado</h3>
+        <p>Solo cambia una mayúscula… y el hash no se parece en nada.</p>
+        <h3>Hash no es cifrado</h3>
         <div class="tbl-wrap"><table>
           <tr><th></th><th>Cifrado</th><th>Hash</th></tr>
-          <tr><td><b>¿Para qué?</b></td><td><b>Confidencialidad</b>: ocultar</td><td><b>Integridad</b>: detectar cambios</td></tr>
-          <tr><td><b>¿Se puede deshacer?</b></td><td>Sí, con la clave</td><td><b>No, nunca</b></td></tr>
-          <tr><td><b>¿Usa clave?</b></td><td>Sí</td><td>No</td></tr>
-          <tr><td><b>Tamaño del resultado</b></td><td>Parecido al original</td><td>Siempre el mismo</td></tr>
-          <tr><td><b>Ejemplos</b></td><td>AES, RSA</td><td>SHA-256, SHA-512</td></tr>
+          <tr><td><b>¿Para qué?</b></td><td>Ocultar información</td><td>Saber si algo ha cambiado</td></tr>
+          <tr><td><b>¿Se puede deshacer?</b></td><td>Sí, con la clave</td><td><b>No</b></td></tr>
         </table></div>
-        <div class="box warn"><b>OJO</b><p>«Descifrar un hash» no existe. Y <b>MD5</b> y <b>SHA-1</b> están obsoletos para seguridad: usa <b>SHA-256</b>.</p></div>
-        <h3>¿Para qué se usa?</h3>
-        <p>✔ Comprobar que un archivo descargado es el original · ✔ Verificar copias de seguridad · ✔ Firmas digitales · ✔ Guardar contraseñas (con «sal») · ✔ Convertir una contraseña en una clave.</p>
       </section>
 
       <!-- 7 -->
       <section class="unit" id="calcular">
-        <div class="unit-head"><span class="num">7</span><h2>Calcular hashes</h2></div>
-        <div class="rooms"><span>SALAS 4 · 5 · 6 · 7</span></div>
-        <h3>Hash de un archivo (PowerShell)</h3>
+        <div class="unit-head"><span class="num">7</span><h2>Calcular un hash</h2></div>
+        <div class="rooms"><span>SALAS 4 · 5 · 6</span></div>
+        <h3>De un archivo (PowerShell)</h3>
+        <p>Primero ve a la carpeta donde está el archivo:</p>
         <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>cd $HOME\Downloads
-Get-FileHash .\contrato.txt -Algorithm SHA256</code></pre></div>
-        <p>Varios archivos a la vez, con el comodín <code>*</code>:</p>
-        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>Get-FileHash .\*.txt -Algorithm SHA256 | Format-List Path, Hash</code></pre></div>
-        <h3>Hash de un texto (PowerShell)</h3>
-        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>$s = "hola"
--join ([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($s)) | ForEach-Object { $_.ToString("x2") })</code></pre></div>
-        <p>Resultado: <code>b221d9db…cd4ddb79</code>. En <b>CyberChef</b> es la operación <b>SHA2</b> con tamaño <b>256</b>.</p>
-        <h3>Crear un archivo exacto</h3>
-        <p>El Bloc de notas a veces añade un salto de línea al final, y eso <b>cambia el hash</b>. Para crear un archivo con un contenido exacto:</p>
-        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>Set-Content .\mensaje.txt "hola" -NoNewline</code></pre></div>
-        <h3>Probar muchos valores (bucle)</h3>
-        <p>Como un hash es impredecible, si necesitamos uno con una forma concreta la única opción es probar. Un bucle <code>for</code> repite una acción cambiando un número:</p>
-        <div class="cmd"><div class="cmd-head"><span>POWERSHELL · ESTRUCTURA DE UN BUCLE</span><button class="copy" type="button">Copiar</button></div><pre><code>for ($n = 0; $n -lt 10; $n++) {
-  "Probando el número $n"
-}</code></pre></div>
-        <div class="box tip"><b>DETALLES</b><p>• <code>Get-FileHash</code> muestra el hash en <b>MAYÚSCULAS</b> y CyberChef en <b>minúsculas</b>: es el mismo hash.<br>• Si dice «no se encuentra la ruta», estás en otra carpeta: usa <code>cd</code> y <code>dir</code>.<br>• Para comparar dos hashes basta con fijarse en el principio y el final.</p></div>
+Get-FileHash .\archivo.txt -Algorithm SHA256</code></pre></div>
+        <p>Para calcular <b>varios a la vez</b> usa <code>*</code>:</p>
+        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>Get-FileHash .\*.txt -Algorithm SHA256</code></pre></div>
+        <h3>De un texto (CyberChef)</h3>
+        <p>Escribe el texto en <b>Input</b> y usa la operación <b>SHA2</b> con tamaño <b>256</b>.</p>
+        <div class="box tip"><b>CONSEJOS</b><p>• PowerShell lo muestra en MAYÚSCULAS y CyberChef en minúsculas: <b>es el mismo hash</b>.<br>• Para comparar dos hashes, mira el principio y el final.<br>• Si PowerShell dice que no encuentra el archivo, estás en otra carpeta: escribe <code>dir</code> para ver qué hay.<br>• Cuando el juego te dé un script ya hecho, solo tienes que <b>copiarlo, pegarlo y pulsar Intro</b>.</p></div>
       </section>
 
       <!-- 8 -->
       <section class="unit" id="copias">
-        <div class="unit-head"><span class="num">8</span><h2>Verificar copias de seguridad</h2></div>
-        <div class="rooms"><span>SALA 6 · COPIAS</span></div>
-        <p class="lead">Una copia que no se comprueba <b>no es fiable</b>. Puede estar corrupta (fallo de disco, copia interrumpida) o manipulada.</p>
-        <h3>El manifiesto de hashes</h3>
-        <p>Al hacer la copia se guarda un archivo (por ejemplo <code>SHA256SUMS.txt</code>) con el hash de cada archivo copiado:</p>
-        <div class="cmd"><div class="cmd-head"><span>SHA256SUMS.txt</span></div><pre><code>44b0e3218e2189fb3cc5a22c5922bc7d4ecc82828146b53312214e7361e86a45  facturas.txt
-7201a5d59f74305a355bfce098ed75f18c9b857e068a4d1f62de33a2a7d579ff  clientes.txt</code></pre></div>
+        <div class="unit-head"><span class="num">8</span><h2>Comprobar las copias de seguridad</h2></div>
+        <div class="rooms"><span>SALA 6</span></div>
+        <p class="lead">Una copia de seguridad puede estropearse. <b>Antes de restaurarla, hay que comprobarla.</b></p>
+        <p>Al hacer la copia se guarda una lista con el hash de cada archivo (un <b>manifiesto</b>):</p>
+        <div class="cmd"><div class="cmd-head"><span>SHA256SUMS.txt</span></div><pre><code>44b0e3218e2189fb...  facturas.txt
+7201a5d59f74305a...  clientes.txt</code></pre></div>
         <ol class="steps">
-          <li><span>Antes de restaurar, recalcula el hash de cada archivo de la copia (<code>Get-FileHash</code>).</span></li>
-          <li><span>Compáralo con su línea del manifiesto.</span></li>
-          <li><span>¿Alguno no coincide? → esa copia está <b>dañada o manipulada</b>: no se restaura. Se recupera desde otra copia (otro soporte u otra ubicación).</span></li>
+          <li><span>Calcula el hash de cada archivo de la copia.</span></li>
+          <li><span>Compáralo con el de la lista.</span></li>
+          <li><span>Si alguno <b>no coincide</b>, ese archivo está dañado: no se usa.</span></li>
         </ol>
-        <div class="box tip"><b>EN LA VIDA REAL</b><p>Las distribuciones de Linux publican un <code>SHA256SUMS</code> junto a sus ISO para que compruebes la descarga. Muchos programas de backup verifican las copias exactamente así.</p></div>
-        <h3>Recuerda: regla 3-2-1 + cifrado</h3>
-        <p><b>3</b> copias · <b>2</b> soportes distintos · <b>1</b> fuera de la ubicación principal. La copia que sale del edificio contiene los mismos datos confidenciales que el original: <b>debe ir cifrada</b>.</p>
+        <div class="box tip"><b>RECUERDA LA REGLA 3-2-1</b><p><b>3</b> copias · <b>2</b> tipos de soporte · <b>1</b> fuera de la empresa. Y la que sale fuera, <b>cifrada</b>.</p></div>
       </section>
 
       <!-- 9 -->
       <section class="unit" id="7zip">
-        <div class="unit-head"><span class="num">9</span><h2>Proteger un paquete con 7-Zip</h2></div>
-        <div class="rooms"><span>SALA 8 · CÁMARA</span></div>
+        <div class="unit-head"><span class="num">9</span><h2>Proteger archivos con 7-Zip</h2></div>
+        <div class="rooms"><span>SALA 8</span></div>
         <ol class="steps">
-          <li><span>Clic derecho sobre la carpeta → <b>7-Zip → Añadir al archivo…</b></span></li>
-          <li><span>Formato de archivo: <b>7z</b>.</span></li>
-          <li><span>Zona <b>Encriptación</b>: escribe la contraseña dos veces.</span></li>
-          <li><span>Método de cifrado: <b>AES-256</b>.</span></li>
+          <li><span>Clic derecho en la carpeta → <b>7-Zip → Añadir al archivo…</b></span></li>
+          <li><span>Formato: <b>7z</b>.</span></li>
+          <li><span>En <b>Encriptación</b>: escribe la contraseña dos veces.</span></li>
+          <li><span>Método: <b>AES-256</b>.</span></li>
           <li><span>Marca <b>Cifrar nombres de archivo</b>.</span></li>
         </ol>
         <div class="grid2">
-          <div class="card"><h4>Sin «cifrar nombres»</h4><p>No se pueden abrir los archivos, pero <b>se ve qué archivos hay</b> (<code>nominas_2026.xlsx</code>…). Eso ya es información.</p></div>
-          <div class="card dark"><h4>Con «cifrar nombres»</h4><p>Sin la contraseña no se ve <b>nada</b>: ni el contenido ni la lista de archivos.</p></div>
+          <div class="card"><h4>Sin «Cifrar nombres»</h4><p>No se pueden abrir los archivos, pero <b>se ve cómo se llaman</b>.</p></div>
+          <div class="card dark"><h4>Con «Cifrar nombres»</h4><p>Sin la contraseña <b>no se ve nada</b>.</p></div>
         </div>
-        <h3>Comprobar que está cifrado</h3>
-        <p>Abre el <code>.7z</code> con 7-Zip. Puedes añadir la columna <b>Método</b> (clic derecho en las cabeceras): si aparece <code>7zAES</code>, el archivo está cifrado. Desde la consola:</p>
-        <div class="cmd"><div class="cmd-head"><span>POWERSHELL</span><button class="copy" type="button">Copiar</button></div><pre><code>&amp; "C:\Program Files\7-Zip\7z.exe" l -slt .\CONFIDENCIAL.7z</code></pre></div>
-        <p>Te pedirá la contraseña y mostrará, para cada archivo, líneas como <code>Path</code>, <code>Size</code> (tamaño original en bytes) y <code>Method</code>.</p>
-        <div class="box warn"><b>BUENAS PRÁCTICAS</b><p>• La contraseña se envía <b>por otro canal</b> (teléfono, en persona), nunca en el mismo correo que el archivo.<br>• Contraseña larga: mejor una frase que una palabra.<br>• Si se olvida, el contenido es irrecuperable.</p></div>
+        <div class="box warn"><b>BUENAS PRÁCTICAS</b><p>• Envía la contraseña por <b>otro camino</b> (teléfono, en persona), nunca en el mismo correo.<br>• Si la olvidas, no hay forma de recuperar el contenido.</p></div>
       </section>
 
       <!-- 10 -->
       <section class="unit" id="principios">
-        <div class="unit-head"><span class="num">10</span><h2>Principios de seguridad</h2></div>
-        <div class="rooms"><span>SALA 9 · SALIDA</span></div>
+        <div class="unit-head"><span class="num">10</span><h2>¿Qué protege cada cosa?</h2></div>
+        <div class="rooms"><span>SALA 9</span></div>
         <div class="tbl-wrap"><table>
-          <tr><th>Principio</th><th>Pregunta que responde</th><th>Herramientas</th></tr>
-          <tr><td><b>Confidencialidad</b></td><td>¿Puede leerlo alguien no autorizado?</td><td>Cifrado: AES, RSA, BitLocker, VeraCrypt, 7-Zip</td></tr>
-          <tr><td><b>Integridad</b></td><td>¿Ha cambiado?</td><td>Hash (SHA-256), manifiestos de copias</td></tr>
-          <tr><td><b>Disponibilidad</b></td><td>¿Podré usarlo/recuperarlo cuando lo necesite?</td><td>Copias de seguridad (3-2-1), RAID, redundancia</td></tr>
-          <tr><td><b>Autenticidad</b></td><td>¿Quién lo hizo? ¿Es quien dice ser?</td><td>Firma digital, certificados</td></tr>
+          <tr><th>Quiero que…</th><th>Se llama</th><th>Uso</th></tr>
+          <tr><td>nadie más lo pueda leer</td><td><b>Confidencialidad</b></td><td>Cifrado (AES, RSA, BitLocker, 7-Zip)</td></tr>
+          <tr><td>saber si alguien lo ha cambiado</td><td><b>Integridad</b></td><td>Hash (SHA-256)</td></tr>
+          <tr><td>poder recuperarlo si se pierde</td><td><b>Disponibilidad</b></td><td>Copias de seguridad, RAID</td></tr>
+          <tr><td>saber quién lo ha hecho</td><td><b>Autenticidad</b></td><td>Firma digital</td></tr>
         </table></div>
-        <div class="box warn"><b>NO PROTEGEN NADA</b><p>Base64 y otras codificaciones · archivos ocultos · cambiar la extensión · comprimir sin contraseña · «nadie sabe que está ahí».</p></div>
-        <h3>Autoevaluación</h3>
+        <div class="box warn"><b>ESTO NO PROTEGE NADA</b><p>Base64 · ocultar archivos · cambiar la extensión · comprimir sin contraseña.</p></div>
+        <h3>Ponte a prueba</h3>
         <div class="quiz">
-          <details><summary>1. Un técnico lleva un disco externo con las nóminas a otra sede. ¿Qué usarías?</summary><p>Cifrado del disco (BitLocker To Go o VeraCrypt) o un 7z con AES-256. → Confidencialidad.</p></details>
-          <details><summary>2. Descargas una ISO de Ubuntu. ¿Cómo sabes que es la original?</summary><p>Calculas su SHA-256 y lo comparas con el publicado en la web oficial. → Integridad.</p></details>
-          <details><summary>3. Hacienda necesita saber que una factura la emitió tu empresa.</summary><p>Firma digital con el certificado (clave privada) de la empresa. → Autenticidad.</p></details>
-          <details><summary>4. Quieres enviar a un cliente un presupuesto que solo pueda leer él.</summary><p>Cifrarlo con la clave pública del cliente, o un 7z con contraseña enviada por otro canal. → Confidencialidad.</p></details>
-          <details><summary>5. Un compañero «protege» un archivo convirtiéndolo a Base64.</summary><p>No protege nada: es codificación, cualquiera la revierte.</p></details>
-          <details><summary>6. ¿Se puede descifrar un hash SHA-256?</summary><p>No. Es una función de un solo sentido. Lo único que se puede hacer es calcular hashes de posibles entradas y comparar.</p></details>
+          <details><summary>1. Llevas las nóminas en un disco externo a otra oficina. ¿Qué haces?</summary><p>Cifrar el disco (BitLocker To Go) o meterlas en un 7z con contraseña. → Confidencialidad.</p></details>
+          <details><summary>2. Descargas un programa. ¿Cómo sabes que es el original?</summary><p>Comparas su hash con el que publica la web oficial. → Integridad.</p></details>
+          <details><summary>3. Quieres enviar un archivo que solo pueda leer tu cliente.</summary><p>Lo cifras con la clave pública del cliente (o un 7z y la contraseña por teléfono).</p></details>
+          <details><summary>4. Un compañero «protege» un archivo pasándolo a Base64.</summary><p>No protege nada: Base64 es codificación, cualquiera lo deshace.</p></details>
+          <details><summary>5. ¿Se puede descifrar un hash?</summary><p>No. Un hash no tiene vuelta atrás.</p></details>
         </div>
       </section>
 
       <!-- 11 -->
       <section class="unit" id="herramientas">
-        <div class="unit-head"><span class="num">11</span><h2>Caja de herramientas</h2></div>
+        <div class="unit-head"><span class="num">11</span><h2>Chuleta de herramientas</h2></div>
         <div class="rooms"><span>TODAS LAS SALAS</span></div>
-        <h3>PowerShell: lo mínimo</h3>
+        <h3>PowerShell</h3>
         <div class="tbl-wrap"><table>
-          <tr><th>Necesito…</th><th>Comando</th></tr>
+          <tr><th>Quiero…</th><th>Escribo…</th></tr>
           <tr><td>Ir a Descargas</td><td><code>cd $HOME\Downloads</code></td></tr>
-          <tr><td>Ver qué hay en la carpeta</td><td><code>dir</code></td></tr>
-          <tr><td>Ver en qué carpeta estoy</td><td><code>pwd</code></td></tr>
-          <tr><td>Leer un archivo</td><td><code>Get-Content .\archivo.txt</code></td></tr>
-          <tr><td>Crear un archivo con un texto exacto</td><td><code>Set-Content .\a.txt "texto" -NoNewline</code></td></tr>
-          <tr><td>Hash de un archivo</td><td><code>Get-FileHash .\archivo -Algorithm SHA256</code></td></tr>
-          <tr><td>Descodificar Base64</td><td><code>[Convert]::FromBase64String(...)</code> (ver <a href="#codificar">apartado 2</a>)</td></tr>
+          <tr><td>Ver qué archivos hay</td><td><code>dir</code></td></tr>
+          <tr><td>Ver un archivo</td><td><code>Get-Content .\archivo.txt</code></td></tr>
+          <tr><td>Hash de un archivo</td><td><code>Get-FileHash .\archivo.txt -Algorithm SHA256</code></td></tr>
         </table></div>
-        <div class="box tip"><b>TRUCOS</b><p>• <b>Tab</b> autocompleta nombres de archivos.<br>• <b>↑</b> recupera el comando anterior.<br>• <code>.\</code> significa «en esta carpeta».<br>• Pegar en PowerShell: clic derecho o Ctrl+V.</p></div>
+        <div class="box tip"><b>TRUCOS</b><p>• <b>Tab</b> completa el nombre del archivo.<br>• <b>Flecha ↑</b> repite el comando anterior.<br>• Para pegar: <b>clic derecho</b> o Ctrl+V.</p></div>
         <h3>CyberChef</h3>
-        <p><a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">gchq.github.io/CyberChef</a> · funciona en el navegador, no hay que instalar nada.</p>
-        <div class="grid2">
-          <div class="card"><h4>Zonas</h4><p><b>Operations</b> (izquierda): lista de operaciones, con buscador.<br><b>Recipe</b> (centro): las operaciones que aplicas, en orden.<br><b>Input</b> (arriba derecha): los datos de entrada.<br><b>Output</b> (abajo derecha): el resultado.</p></div>
-          <div class="card"><h4>Operaciones útiles</h4><p><b>From Base64</b> / <b>To Base64</b><br><b>From Hex</b> / <b>To Hex</b><br><b>SHA2</b> (tamaño 256)<br><b>AES Decrypt</b> / <b>AES Encrypt</b><br><b>RSA Decrypt</b></p></div>
-        </div>
-        <div class="box tip"><b>RECETAS</b><p>Las operaciones se encadenan: el resultado de una es la entrada de la siguiente. Ejemplo: <b>From Base64</b> → <b>RSA Decrypt</b>. Puedes arrastrar un archivo directamente a la zona Input.</p></div>
-      </section>
-
-      <!-- 12 -->
-      <section class="unit" id="glosario">
-        <div class="unit-head"><span class="num">12</span><h2>Glosario</h2></div>
-        <dl class="glossary">
-          <dt>AES</dt><dd>Algoritmo de cifrado simétrico estándar. Claves de 128, 192 o 256 bits.</dd>
-          <dt>Base64</dt><dd>Codificación que representa datos con 64 caracteres imprimibles. No protege.</dd>
-          <dt>BitLocker</dt><dd>Cifrado de unidades completas integrado en Windows.</dd>
-          <dt>Cifrado híbrido</dt><dd>Combinar asimétrico (para intercambiar la clave) y simétrico (para los datos). Lo usa HTTPS.</dd>
-          <dt>Clave privada</dt><dd>Mitad secreta del par asimétrico. Descifra y firma.</dd>
-          <dt>Clave pública</dt><dd>Mitad compartible del par asimétrico. Cifra para su dueño y verifica sus firmas.</dd>
-          <dt>Datos en reposo</dt><dd>Información almacenada en un soporte (disco, USB, copia).</dd>
-          <dt>Efecto avalancha</dt><dd>Un cambio mínimo en la entrada produce un hash totalmente distinto.</dd>
-          <dt>Firma digital</dt><dd>Hash de un documento cifrado con la clave privada del firmante. Aporta autenticidad e integridad.</dd>
-          <dt>Hash</dt><dd>Huella de tamaño fijo de unos datos. De un solo sentido.</dd>
-          <dt>Hexadecimal</dt><dd>Codificación de bytes con 2 caracteres (0-9, a-f) cada uno.</dd>
-          <dt>IV</dt><dd>Vector de inicialización: valor aleatorio, no secreto, que se usa junto a la clave en AES-CBC.</dd>
-          <dt>Manifiesto</dt><dd>Lista de archivos con su hash, usada para verificar copias o descargas.</dd>
-          <dt>PEM</dt><dd>Formato de texto para guardar claves y certificados (BEGIN/END + Base64).</dd>
-          <dt>RSA</dt><dd>Algoritmo de cifrado asimétrico.</dd>
-          <dt>SHA-256</dt><dd>Función hash que produce 256 bits (64 caracteres hex). La recomendada hoy.</dd>
-          <dt>VeraCrypt</dt><dd>Software libre para crear contenedores y unidades cifradas.</dd>
-        </dl>
+        <p><a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">gchq.github.io/CyberChef</a> · Funciona en el navegador.</p>
+        <ol class="steps">
+          <li><span>Busca la operación en la lista de la <b>izquierda</b>.</span></li>
+          <li><span>Arrástrala al centro (<b>Recipe</b>).</span></li>
+          <li><span>Pega los datos en <b>Input</b> (arriba a la derecha).</span></li>
+          <li><span>El resultado sale en <b>Output</b> (abajo a la derecha).</span></li>
+        </ol>
+        <div class="tbl-wrap"><table>
+          <tr><th>Quiero…</th><th>Operación</th></tr>
+          <tr><td>Leer Base64</td><td><b>From Base64</b></td></tr>
+          <tr><td>Hash de un texto</td><td><b>SHA2</b> (256)</td></tr>
+          <tr><td>Descifrar AES</td><td><b>AES Decrypt</b></td></tr>
+        </table></div>
       </section>
     </main>
   </div>
-  <footer>CITED · Seguridad Informática · 2º SMR · UD2 · Apuntes de consulta</footer>
+<footer>CITED · Seguridad Informática · 2º SMR · UD2 · Apuntes de consulta</footer>
 
   <script>
     document.addEventListener("click", (e) => {
