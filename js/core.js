@@ -8,7 +8,6 @@
 
   const CONFIG = {
     SECRET: "CAJA-NEGRA|2SMR|UD2|v2", // cámbialo cada curso
-    DURATION_MIN: 90,                 // cuenta atrás visual (no bloquea)
     TEACHER_PIN: "2SMR",              // PIN del panel del profesor
     PENALTY_WRONG: 25,
     PENALTY_HINT: 50,
@@ -174,8 +173,11 @@
     const key = await crypto.subtle.importKey("raw", fromHex(d.keyHex), { name: "AES-CBC" }, false, ["encrypt"]);
     d.cipherHex = toHex(new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", iv }, key, enc.encode(plain))));
 
-    /* SALA 8 · Cámara: testigo para el intercambio 7-Zip */
+    /* SALA 8 · Cámara: testigo dentro del .7z (longitud variable por grupo) */
     d.token = await token(code);
+    const ref = Array.from({ length: r.int(6, 40) }, () => r.pick(ALPH.split(""))).join("");
+    d.testigo = `TESTIGO DE SEGURIDAD\r\nCODIGO DE GRUPO: ${code}\r\nTESTIGO: ${d.token}\r\nREFERENCIA: ${ref}\r\n`;
+    d.testigoSize = enc.encode(d.testigo).length;
 
     cache[code] = d;
     return d;
@@ -231,10 +233,24 @@
     } catch (e) { return null; }
   }
 
+  /* ---------- Archivo de partida guardada (firmado) ---------- */
+  async function makeSave(state) {
+    const body = JSON.stringify(state);
+    return JSON.stringify({ app: "cajanegra", v: 2, state, chk: await sha256(CONFIG.SECRET + "#SAVE#" + body) });
+  }
+  async function readSave(text) {
+    try {
+      const o = JSON.parse(text);
+      if (o.app !== "cajanegra" || !o.state) return null;
+      if ((await sha256(CONFIG.SECRET + "#SAVE#" + JSON.stringify(o.state))) !== o.chk) return { tampered: true };
+      return { state: o.state };
+    } catch (e) { return null; }
+  }
+
   function fmtTime(sec) {
     sec = Math.max(0, Math.floor(sec));
     return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
   }
 
-  global.CN = { CONFIG, sha256, rng, generateGroupCode, deriveGroup, token, makeRSA, checkMining, firstNonce, makeFinishCode, parseFinishCode, fmtTime };
+  global.CN = { CONFIG, sha256, rng, generateGroupCode, deriveGroup, token, makeRSA, checkMining, firstNonce, makeFinishCode, parseFinishCode, makeSave, readSave, fmtTime };
 })(window);

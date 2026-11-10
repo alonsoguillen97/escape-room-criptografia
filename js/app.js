@@ -466,16 +466,16 @@
     /* ---------------- SALA 8 ---------------- */
     {
       id: "camara", short: "Cámara", title: "La cámara acorazada", scene: "camara", keyword: "RECUPERACIÓN",
-      intro: "La cámara acorazada necesita DOS llaves: la vuestra y la de otro equipo. Cada equipo prepara un paquete cifrado con 7-Zip con su testigo dentro y se lo pasa a otro. Sin contraseña, nadie lee nada.",
+      intro: "La cámara acorazada se abre con DOS llaves. Para sacar el disco del edificio hay que meterlo en un paquete cifrado con 7-Zip. Llave 1: el testigo del paquete. Llave 2: la prueba de que el paquete está realmente cifrado.",
       hints: [
         "7-Zip: clic derecho en la carpeta → 7-Zip → Añadir al archivo… → Formato 7z, AES-256, contraseña y «Cifrar nombres de archivo».",
-        "Llave 2: abre el .7z del otro equipo (pídeles la contraseña DESPUÉS de intentarlo sin ella) y copia su código de grupo y su TESTIGO.",
+        "Llave 2: abre vuestro .7z con 7-Zip (os pedirá la contraseña). En la lista verás el tamaño del testigo; en la columna Método (o con 7z l -slt) aparece el cifrado.",
       ],
       lesson: "Sin la contraseña el paquete es ilegible, y con «cifrar nombres» ni siquiera se ve qué contiene. La <b>clave</b> es lo único que permite recuperar los datos: si se pierde, se pierde todo; si se filtra, se filtra todo.",
       objectives: [
-        { key: "kit", label: "Prepara vuestro paquete cifrado con 7-Zip" },
-        { key: "k1", label: "Llave 1: vuestro testigo" },
-        { key: "k2", label: "Llave 2: el testigo de otro equipo" },
+        { key: "kit", label: "Prepara el paquete cifrado con 7-Zip" },
+        { key: "k1", label: "Llave 1: el testigo" },
+        { key: "k2", label: "Llave 2: demuestra que el paquete está cifrado" },
       ],
       hotspots: [
         { id: "kit", x: 40, y: 190, w: 225, h: 90, label: "Kit de transporte", done: (a) => a.done("kit"), open: (a) => openWin("Kit de transporte seguro", (b) => {
@@ -483,28 +483,28 @@
             { name: "clientes.txt", content: "LISTADO DE CLIENTES (FICTICIO)\r\nCliente 001 - Alfa Logistica\r\nCliente 002 - Beta Sistemas\r\nCliente 003 - Gamma Consulting\r\n" },
             { name: "facturas.txt", content: "FACTURAS PENDIENTES (FICTICIO)\r\nF-2025-001  1.250 EUR\r\nF-2025-002    830 EUR\r\nF-2025-003  4.100 EUR\r\n" },
             { name: "nominas.txt", content: "NOMINAS (FICTICIO)\r\nEmpleado A  1.600 EUR\r\nEmpleado B  1.750 EUR\r\nEmpleado C  2.100 EUR\r\n" },
-            { name: `testigo_${D.code}.txt`, content: `TESTIGO DE SEGURIDAD\r\nCODIGO DE GRUPO: ${D.code}\r\nTESTIGO: ${D.token}\r\n` },
+            { name: `testigo_${D.code}.txt`, content: D.testigo },
           ];
           b.innerHTML = `<p>Guarda estos archivos en una carpeta <code>CONFIDENCIAL</code>:</p>`;
           files(b, fl);
-          b.insertAdjacentHTML("beforeend", `<ol class="howto"><li>Clic derecho en la carpeta → <b>7-Zip → Añadir al archivo…</b></li><li>Formato <b>7z</b> · Método de cifrado <b>AES-256</b></li><li>Contraseña: la que elijáis (¡no la digáis en voz alta!)</li><li>Activa <b>Cifrar nombres de archivo</b></li><li>Pasad el .7z a otro equipo (USB, carpeta compartida, Teams…). Que intenten abrirlo <b>sin</b> contraseña antes de dársela.</li></ol><label class="check big-check"><input type="checkbox" ${a.done("kit") ? "checked disabled" : ""}><span>Hemos creado el .7z cifrado y lo hemos entregado</span></label>`);
-          $(".big-check input", b).onchange = (e) => e.target.checked && a.complete("kit", "Paquete entregado");
+          b.insertAdjacentHTML("beforeend", `<ol class="howto"><li>Clic derecho en la carpeta → <b>7-Zip → Añadir al archivo…</b></li><li>Formato <b>7z</b> · Método de cifrado <b>AES-256</b></li><li>Contraseña: la que elijáis (¡apuntadla, sin ella no hay vuelta atrás!)</li><li>Activa <b>Cifrar nombres de archivo</b></li><li>Haz doble clic en el <code>.7z</code> creado: ¿te deja ver algo sin la contraseña? Cancela y vuelve a abrirlo, esta vez con ella.</li></ol><label class="check big-check"><input type="checkbox" ${a.done("kit") ? "checked disabled" : ""}><span>Hemos creado el .7z cifrado con nombres cifrados</span></label>`);
+          $(".big-check input", b).onchange = (e) => e.target.checked && a.complete("kit", "Paquete preparado");
         }, { icon: "🧳", wide: true }) },
-        { id: "k1", x: 698, y: 120, w: 75, h: 78, label: "Llave 1", done: (a) => a.done("k1"), open: (a) => openWin("Llave 1 · vuestro testigo", (b, close) => {
-          b.innerHTML = `<p>Introduce el TESTIGO que hay en vuestro archivo <code>testigo_${D.code}.txt</code>.</p>`;
-          answer(b, { label: "Vuestro testigo", placeholder: "6 caracteres", btn: "Girar llave", check: async (v) => { if (norm(v) === D.token) { a.complete("k1", "Llave 1 girada"); setTimeout(close, 600); return true; } a.fail("Ese no es vuestro testigo"); return false; } });
+        { id: "k1", x: 698, y: 120, w: 75, h: 78, label: "Llave 1", show: (a) => a.done("kit"), done: (a) => a.done("k1"), open: (a) => openWin("Llave 1 · el testigo", (b, close) => {
+          b.innerHTML = `<p>Abre el paquete <b>con la contraseña</b> y lee el valor TESTIGO de <code>testigo_${D.code}.txt</code>.</p>`;
+          answer(b, { label: "Testigo", placeholder: "6 caracteres", btn: "Girar llave", check: async (v) => { if (norm(v) === D.token) { a.complete("k1", "Llave 1 girada"); setTimeout(close, 600); return true; } a.fail("Ese no es el testigo"); return false; } });
         }, { icon: "🗝️" }) },
-        { id: "k2", x: 698, y: 208, w: 75, h: 78, label: "Llave 2", done: (a) => a.done("k2"), open: (a) => openWin("Llave 2 · equipo aliado", (b, close) => {
-          b.innerHTML = `<p>Datos del <code>testigo_XXXX.txt</code> que hay dentro del .7z del otro equipo.</p><form class="answer two" novalidate><label><span>Código del otro equipo</span><input class="mono" maxlength="4" placeholder="XXXX"></label><label><span>Su testigo</span><input class="mono" maxlength="6" placeholder="6 caracteres"></label><button class="btn" type="submit">Girar llave</button></form>`;
+        { id: "k2", x: 698, y: 208, w: 75, h: 78, label: "Llave 2", show: (a) => a.done("k1"), done: (a) => a.done("k2"), open: (a) => openWin("Llave 2 · inspección del paquete", (b, close) => {
+          b.innerHTML = `<p>La cámara quiere pruebas de que el paquete está cifrado. Ábrelo en 7-Zip (con la contraseña) y mira la fila del archivo testigo: columnas <b>Tamaño</b> (bytes) y <b>Método</b>. Si no ves la columna Método, clic derecho sobre las cabeceras → márcala. También puedes usar la consola, en la carpeta del .7z:</p>${cmd(`& "C:\\Program Files\\7-Zip\\7z.exe" l -slt .\\CONFIDENCIAL.7z`)}<p class="small muted">Te pedirá la contraseña. En la consola busca las líneas <code>Path = …testigo…</code>, <code>Size</code> y <code>Method</code>.</p><form class="answer two" novalidate><label><span>Tamaño del testigo (bytes)</span><input class="mono" inputmode="numeric" placeholder="p. ej. 120"></label><label><span>Método (tal cual aparece)</span><input class="mono" placeholder="p. ej. LZMA2:12 …"></label><button class="btn" type="submit">Girar llave</button></form>`;
           $("form", b).onsubmit = async (e) => {
             e.preventDefault();
-            const [ic, it] = $$("input", b), c = norm(ic.value), t = norm(it.value);
-            if (!c || !t) return toast("Rellena los dos campos", "info");
-            if (c === D.code) return toast("Tiene que ser el testigo de OTRO equipo", "info");
-            if ((await CN.token(c)) === t) { a.set("ally", c); a.complete("k2", `Llave 2 girada · aliado ${c}`); setTimeout(close, 600); }
-            else a.fail("Ese testigo no corresponde a ese equipo");
+            const [is, im] = $$("input", b), size = +is.value.replace(/\D/g, ""), method = im.value.toUpperCase();
+            if (!size || !method) return toast("Rellena los dos campos", "info");
+            if (size !== D.testigoSize) return a.fail("Ese no es el tamaño del testigo del paquete");
+            if (!method.includes("7ZAES")) return a.fail("Ese método no incluye cifrado AES: ¿activaste la contraseña?");
+            a.complete("k2", "Llave 2 girada"); setTimeout(close, 600);
           };
-        }, { icon: "🗝️" }) },
+        }, { icon: "🗝️", wide: true }) },
       ],
     },
     /* ---------------- SALA 9 ---------------- */
@@ -735,17 +735,29 @@
     $("#progressFill").style.width = (done / total) * 100 + "%";
     $("#stageMap").innerHTML = ROOMS.map((r, i) => `<li class="${S.completed.includes(i) ? "done" : i === cur && !S.finished ? "current" : ""}" title="${r.title}"><span>${S.completed.includes(i) ? "✓" : i + 1}</span><em>${r.short}</em></li>`).join("");
   }
-  function tick() {
-    if (!S) return;
-    const el = $("#hudTimer"), elapsed = ((S.endTime || Date.now()) - S.startTime) / 1000;
-    if (S.finished) { el.textContent = CN.fmtTime(elapsed); return; }
-    const rem = C.DURATION_MIN * 60 - elapsed;
-    el.textContent = rem >= 0 ? CN.fmtTime(rem) : "+" + CN.fmtTime(-rem);
-    el.parentElement.classList.toggle("over", rem < 0);
-    el.parentElement.classList.toggle("low", rem >= 0 && rem < 600);
-  }
-  setInterval(tick, 1000);
   $("#muteBtn").onclick = () => { if (!S) return; S.muted = !S.muted; save(); updateHUD(); };
+  $("#saveBtn").onclick = () => saveToFile();
+
+  /* ---------- Guardar / cargar partida (para continuar otro día u otro PC) ---------- */
+  async function saveToFile() {
+    if (!S) return;
+    download(`partida_${S.groupCode}.cajanegra`, await CN.makeSave(S));
+    toast("Partida guardada en Descargas. Guárdala en tu USB o en la nube.", "info");
+  }
+  function loadButton() {
+    return `<label class="btn ghost load-btn"><input type="file" accept=".cajanegra,.txt,application/json" hidden>📂 Cargar partida guardada</label>`;
+  }
+  function bindLoad(root) {
+    const inp = $(".load-btn input", root); if (!inp) return;
+    inp.onchange = async () => {
+      const f = inp.files[0]; if (!f) return;
+      const r = await CN.readSave(await f.text());
+      inp.value = "";
+      if (!r) return modal({ title: "Archivo no válido", body: "<p>Ese archivo no es una partida de Operación Caja Negra.</p>" });
+      if (r.tampered) return modal({ title: "Partida manipulada", body: "<p>El archivo ha sido modificado y no se puede cargar.</p>" });
+      S = r.state; save(); toast(`Partida de ${S.team} cargada`, "ok"); boot();
+    };
+  }
 
   /* =============== MOTOR DE SALAS =============== */
   let radioTimer = null;
@@ -857,18 +869,20 @@
         <div class="rooms-preview">${ROOMS.map((r, i) => `<div><span>${i + 1}</span>${r.short}</div>`).join("")}</div>
         <div class="mission">
           <div><b>Cada sala es distinta</b><ul><li>investiga los objetos</li><li>usa herramientas reales</li><li>recoge objetos para salas posteriores</li><li>escucha la radio</li></ul></div>
-          <div><b>Necesitaréis</b><ul><li>PowerShell</li><li>CyberChef (navegador)</li><li>7-Zip</li><li>otro equipo aliado (sala 8)</li></ul></div>
+          <div><b>Necesitaréis</b><ul><li>PowerShell</li><li>CyberChef (navegador)</li><li>7-Zip</li><li>un USB o la nube para guardar la partida</li></ul></div>
         </div>
-        <div class="rules"><span>⏱ Gana quien escape antes</span><span>🎯 ${C.START_SCORE} puntos</span><span>✗ Error −${C.PENALTY_WRONG}</span><span>💡 Pista −${C.PENALTY_HINT}</span><span>★ Sala limpia +${C.BONUS_CLEAN}</span></div>
-        <p class="small muted">Cada equipo recibe datos distintos. Copiar a otro equipo o preguntarle a una IA no sirve: hay que calcularlo de verdad. Activad el sonido 🔊.</p>
+        <div class="rules"><span>🏆 Gana el equipo con más puntos</span><span>🎯 ${C.START_SCORE} puntos</span><span>✗ Error −${C.PENALTY_WRONG}</span><span>💡 Pista −${C.PENALTY_HINT}</span><span>★ Sala limpia +${C.BONUS_CLEAN}</span></div>
+        <p class="small muted">Cada equipo recibe datos distintos. Copiar a otro equipo o preguntarle a una IA no sirve: hay que calcularlo de verdad. Activad el sonido 🔊. Al acabar la clase pulsad 💾 para guardar la partida en un archivo.</p>
         <form class="start" id="startForm"><label><span>Nombre del equipo</span><input id="teamName" maxlength="30" required autocomplete="off" placeholder="p. ej. Los Hashers"></label><button class="btn big" type="submit">ENTRAR EN EL EDIFICIO</button></form>
+        <div class="load-row">¿Venís de otra clase? ${loadButton()}</div>
       </div></section>`;
+    bindLoad(app);
     $("#startForm").onsubmit = async (e) => {
       e.preventDefault();
       const team = $("#teamName").value.trim(); if (!team) return $("#teamName").focus();
       S = newState(team); save();
       await boot();
-      await modal({ title: `Código de equipo: ${S.groupCode}`, body: `<p>Aparece siempre arriba. Vuestros archivos y soluciones dependen de él.</p><p class="small muted">Si reiniciáis, se genera otro código y el tiempo vuelve a cero.</p>`, ok: "¡Adelante!" });
+      await modal({ title: `Código de equipo: ${S.groupCode}`, body: `<p>Aparece siempre arriba. Vuestros archivos y soluciones dependen de él.</p><p class="small muted">Al final de cada clase, pulsad 💾 (arriba) para descargar la partida y continuar otro día, aunque sea en otro ordenador.</p>`, ok: "¡Adelante!" });
     };
   }
   function renderResume(saved) {
@@ -877,17 +891,18 @@
     app.innerHTML = `<section class="intro"><div class="intro-card card narrow">
       <h2>¿QUIERES CONTINUAR LA MISIÓN?</h2>
       <div class="resume-grid"><div><span>EQUIPO</span><b>${esc(saved.team)}</b></div><div><span>CÓDIGO</span><b>${saved.groupCode}</b></div><div><span>PUNTOS</span><b>${saved.score}</b></div><div><span>${saved.finished ? "ESTADO" : "SALA"}</span><b>${saved.finished ? "Completada" : room.title}</b></div></div>
-      <div class="row-actions"><button class="btn big" id="cont">CONTINUAR</button><button class="btn ghost big" id="reset">REINICIAR</button></div></div></section>`;
+      <div class="row-actions"><button class="btn big" id="cont">CONTINUAR</button><button class="btn ghost big" id="reset">REINICIAR</button></div><div class="load-row">${loadButton()}</div></div></section>`;
+    bindLoad(app);
     $("#cont").onclick = () => { S = saved; boot(); };
     $("#reset").onclick = async () => {
-      if (await modal({ title: "¿Reiniciar la misión?", body: "<p>Se pierde todo el progreso, se genera un <b>código nuevo</b> (datos nuevos) y el cronómetro vuelve a cero.</p>", ok: "Sí, reiniciar", cancel: "Cancelar" })) { clear(); S = null; renderIntro(); }
+      if (await modal({ title: "¿Reiniciar la misión?", body: "<p>Se pierde todo el progreso, se genera un <b>código nuevo</b> (datos nuevos) y la puntuación vuelve a 1000.</p>", ok: "Sí, reiniciar", cancel: "Cancelar" })) { clear(); S = null; renderIntro(); }
     };
   }
   async function boot() {
     app.innerHTML = `<div class="loading"><div class="spinner"></div>Generando claves y evidencias de vuestro equipo…</div>`;
     D = await CN.deriveGroup(S.groupCode);
     if (!S.rsa) { S.rsa = await CN.makeRSA(D.letter); save(); }
-    updateHUD(); tick();
+    updateHUD();
     if (S.finished) return renderFinal();
     renderRoom(Math.min(S.current, ROOMS.length - 1));
   }
@@ -896,7 +911,7 @@
     transition(renderFinal);
   }
   async function renderFinal() {
-    CUR = null; updateHUD(); tick(); $("#inv").hidden = true;
+    CUR = null; updateHUD(); $("#inv").hidden = true;
     const elapsed = Math.round((S.endTime - S.startTime) / 1000);
     const code = await CN.makeFinishCode({ group: S.groupCode, team: S.team, elapsed, score: S.score, hints: S.hintsUsed, errors: S.totalErrors, end: S.endTime });
     app.innerHTML = `<section class="final">
@@ -904,15 +919,15 @@
       <div class="card final-card">
         <span class="eyebrow">MISIÓN COMPLETADA</span>
         <h1>SISTEMA <span class="hl">RECUPERADO</span></h1>
-        <div class="stats"><div><span>TIEMPO</span><b>${CN.fmtTime(elapsed)}</b></div><div><span>PUNTOS</span><b>${S.score}</b></div><div><span>PISTAS</span><b>${S.hintsUsed}</b></div><div><span>ERRORES</span><b>${S.totalErrors}</b></div></div>
-        <div class="achieved"><b>Habéis conseguido:</b><ul><li>demostrar que una contraseña de Windows no cifra un disco</li><li>leer una nota «cifrada» que solo estaba codificada</li><li>descifrar con RSA usando la clave privada correcta</li><li>detectar manipulaciones invisibles con SHA-256</li><li>sellar una transferencia probando miles de hashes</li><li>verificar copias y diseñar un plan 3-2-1</li><li>descifrar AES-256 y abrir una caja fuerte</li><li>proteger y compartir datos con 7-Zip</li></ul></div>
+        <div class="stats"><div><span>SALAS</span><b>${S.completed.length}/${ROOMS.length}</b></div><div><span>PUNTOS</span><b>${S.score}</b></div><div><span>PISTAS</span><b>${S.hintsUsed}</b></div><div><span>ERRORES</span><b>${S.totalErrors}</b></div></div>
+        <div class="achieved"><b>Habéis conseguido:</b><ul><li>demostrar que una contraseña de Windows no cifra un disco</li><li>leer una nota «cifrada» que solo estaba codificada</li><li>descifrar con RSA usando la clave privada correcta</li><li>detectar manipulaciones invisibles con SHA-256</li><li>sellar una transferencia probando miles de hashes</li><li>verificar copias y diseñar un plan 3-2-1</li><li>descifrar AES-256 y abrir una caja fuerte</li><li>proteger datos con 7-Zip y AES-256</li></ul></div>
         <div class="kw-list">${S.keywords.map((k) => `<span>${k}</span>`).join("")}</div>
         <div class="summary"><div><b>Confidencialidad</b> → cifrado</div><div><b>Integridad</b> → hash</div><div><b>Disponibilidad</b> → copias</div><div><b>Autenticidad</b> → firma</div></div>
         <div class="finish-code"><span>CÓDIGO DE FINALIZACIÓN · entrégalo al profesor para el ranking</span>${cmd(code, "Equipo " + esc(S.team) + " · " + S.groupCode)}</div>
         <button class="btn big" id="finBtn" type="button">FINALIZAR MISIÓN</button>
       </div></section>`;
     confetti(80); Snd.door();
-    $("#finBtn").onclick = () => { confetti(80); modal({ title: "¡Habéis escapado!", body: `<p>Tiempo: <b>${CN.fmtTime(elapsed)}</b> · ${S.score} puntos.</p><p>Copiad el código de finalización y entregádselo al profesor.</p>`, ok: "Hecho" }); };
+    $("#finBtn").onclick = () => { confetti(80); modal({ title: "¡Habéis escapado!", body: `<p>Puntuación final: <b>${S.score} puntos</b>.</p><p>Copiad el código de finalización y entregádselo al profesor.</p>`, ok: "Hecho" }); };
   }
   function confetti(n) {
     const wrap = document.createElement("div"); wrap.className = "confetti";

@@ -31,7 +31,7 @@
   }
 
   function sorted() {
-    return list.slice().sort((a, b) => (b.valid - a.valid) || (a.elapsed - b.elapsed) || (b.score - a.score));
+    return list.slice().sort((a, b) => (b.valid - a.valid) || (b.score - a.score) || (a.end - b.end));
   }
 
   function rank() {
@@ -39,13 +39,13 @@
     const s = sorted().filter((x) => x.valid);
     const pod = [s[1], s[0], s[2]];
     v.innerHTML = `
-      <h2>Ranking por tiempo</h2>
-      <p class="muted small">Pega los códigos de finalización (uno por línea). Se ordena por tiempo; a igualdad, por puntos.</p>
+      <h2>Ranking por puntos</h2>
+      <p class="muted small">Pega los códigos de finalización (uno por línea). Se ordena por puntos; si hay empate, gana quien terminó antes.</p>
       <textarea id="codes" placeholder="CN.xxxxx.XXXXXXXX"></textarea>
       <div class="toolbar"><button class="btn" id="add">Añadir códigos</button><button class="btn ghost" id="clr">Vaciar ranking</button></div>
-      ${s.length ? `<div class="podium">${pod.map((x, i) => x ? `<div class="pod p${[2, 1, 3][i]}"><div class="bar">${[2, 1, 3][i]}</div><b>${esc(x.team)}</b><span>${CN.fmtTime(x.elapsed)} · ${x.score} pts</span></div>` : "<div></div>").join("")}</div>` : ""}
-      <table><thead><tr><th>#</th><th>Equipo</th><th>Grupo</th><th>Tiempo</th><th>Puntos</th><th>Pistas</th><th>Errores</th><th></th></tr></thead><tbody>
-      ${sorted().map((x, i) => `<tr class="${x.valid ? "" : "invalid"}"><td>${x.valid ? i + 1 : "✗"}</td><td>${esc(x.team)}</td><td class="mono">${esc(x.group)}</td><td class="mono">${CN.fmtTime(x.elapsed)}</td><td>${x.score}</td><td>${x.hints}</td><td>${x.errors}</td><td>${x.valid ? "✓" : "Código manipulado"}</td></tr>`).join("") || `<tr><td colspan="8">Aún no hay equipos.</td></tr>`}
+      ${s.length ? `<div class="podium">${pod.map((x, i) => x ? `<div class="pod p${[2, 1, 3][i]}"><div class="bar">${[2, 1, 3][i]}</div><b>${esc(x.team)}</b><span>${x.score} pts</span></div>` : "<div></div>").join("")}</div>` : ""}
+      <table><thead><tr><th>#</th><th>Equipo</th><th>Grupo</th><th>Puntos</th><th>Terminó</th><th>Pistas</th><th>Errores</th><th></th></tr></thead><tbody>
+      ${sorted().map((x, i) => `<tr class="${x.valid ? "" : "invalid"}"><td>${x.valid ? i + 1 : "✗"}</td><td>${esc(x.team)}</td><td class="mono">${esc(x.group)}</td><td>${x.score}</td><td class="mono">${new Date(x.end).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${x.hints}</td><td>${x.errors}</td><td>${x.valid ? "✓" : "Código manipulado"}</td></tr>`).join("") || `<tr><td colspan="8">Aún no hay equipos.</td></tr>`}
       </tbody></table>`;
     $("#add").onclick = async () => {
       const lines = $("#codes").value.split(/\s+/).filter(Boolean);
@@ -64,7 +64,7 @@
 
   function sol() {
     const v = $("#view");
-    v.innerHTML = `<h2>Solucionario por grupo</h2><p class="muted small">Escribe el código de grupo que aparece en la pantalla del alumno. Usa <b>PROF</b> para preparar tu propio .7z de emergencia (fase 8) si algún grupo se queda sin pareja.</p>
+    v.innerHTML = `<h2>Solucionario por grupo</h2><p class="muted small">Escribe el código de grupo que aparece en la pantalla del alumno.</p>
       <form id="f" class="answer"><label><span>Código de grupo</span><input id="gc" class="mono" maxlength="4" placeholder="XXXX"></label><button class="btn" type="submit">Ver soluciones</button></form><div id="out" style="margin-top:18px"></div>`;
     $("#f").onsubmit = async (e) => {
       e.preventDefault();
@@ -83,7 +83,7 @@
         ${item("SALA 5 · Laboratorio", `A: <code>${d.msg1Hash}</code><br>B: <code>${d.msg2Hash}</code><br>Sello: número <code>${nonce}</code> (vale cualquier número cuyo hash empiece por ${CN.CONFIG.MINING_PREFIX})`)}
         ${item("SALA 6 · Copias", `Corrupta: <code>${d.corruptName}</code> · su hash real (8): <code>${corruptHash}</code> · Plan válido: p. ej. NAS + Cinta + Nube con 🔒`)}
         ${item("SALA 7 · Despacho", `Texto: <code>${esc(d.keyText)}</code><br>Clave: <code>${d.keyHex}</code><br>Dial: Derecha ${d.dial[0]} → Izquierda ${d.dial[1]} → Derecha ${d.dial[2]}`)}
-        ${item("SALA 8 · Cámara", `Testigo de este equipo: <code>${d.token}</code> (Llave 1 para ellos; Llave 2 para su aliado junto con el código ${code})`)}
+        ${item("SALA 8 · Cámara", `Llave 1 (testigo): <code>${d.token}</code> · Llave 2: Size = <code>${d.testigoSize}</code> bytes y un Method que contenga <code>7zAES</code>`)}
         ${item("SALA 9 · Salida", "C: BitLocker, AES, 7z, carta RSA · I: verificador SHA-256, SHA256SUMS · D: plan 3-2-1 · A: firma de Ana · Papelera: Base64, ocultos")}
       </div>`;
     };
